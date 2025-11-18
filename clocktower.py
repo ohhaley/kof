@@ -217,9 +217,13 @@ for p in g.players[CharacterType.DEMON]:
     
 #Poisoner poisons someone
 for p in g.getplayers():
+    if ReminderToken.POISONER_IS_POISONED in p.tokens: p.tokens.remove(ReminderToken.POISONER_IS_POISONED)
+for p in g.getplayers():
     if p.role == Role.POISONER:
+        p.tell("Pick 1 player for your ability")
         choice = p.choose_players_for_ability(g,1)
         choice[0].tokens.append(ReminderToken.POISONER_IS_POISONED)
+        if choice[0].badinfo == False: choice[0].badinfo = True
 
 
 g.printgameinfo()
