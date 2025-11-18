@@ -2,10 +2,11 @@ import random
 from enum import Enum
 
 class Game:
-    def __init__(self,players,num_days,game_phase):
+    def __init__(self,players,num_days,game_phase,bluffs):
         self.players = players
         self.num_days = num_days
         self.game_phase = game_phase
+        self.bluffs = bluffs
 
     def demon(self):
         return self.players[CharacterType.DEMON][0]
@@ -14,6 +15,14 @@ class Game:
         for role in self.players:
             for p in self.players[role]:
                 print(p.role,p.alignment,p.alive,p.canvote,p.badinfo,p.seat,p.tokens,p.history)
+
+    def getplayers(self):
+        all_players = []
+        for type in self.players:
+            for p in self.players[type]: all_players.append(p)
+        print(all_players)
+        return all_players
+
 
 class Player:
     def __init__(self,role,alignment,alive,canvote,badinfo,seat,tokens,history):
@@ -28,6 +37,12 @@ class Player:
     
     def tell(self,msg):
         self.history.append(msg)
+
+    def choose_players_for_ability(self,g,num):
+        choices = random.sample(g.getplayers(),num)
+        for choice in choices:
+            self.tell("I chose Seat "+str(choice.seat)+" for my ability")
+        return choices
 
 class GamePhase(Enum):
     NIGHT = 1
@@ -164,11 +179,25 @@ for type in num_players_to_num_roles[num_players]:
         players[role_to_character_type[role]].append(Player(role,character_type_to_alignment[role_to_character_type[role]],True,True,False,seats[seat],[],[]))
         seat = seat + 1
 
+#Generate random bluffs
+all_roles = []
+for role in Role:
+    if role_to_character_type[role]==(CharacterType.TOWNSFOLK or CharacterType.OUTSIDER): all_roles.append(role)
+for type in players:
+    for p in players[type]:
+        if p.role in all_roles: all_roles.remove(p.role)
+bluffs = random.sample(all_roles,3)
 
 
 
+g = Game(players,0,GamePhase.NIGHT,bluffs)
 
-g = Game(players,0,GamePhase.NIGHT)
+#Players need to know what their role is
+for type in g.players:
+    for p in g.players[type]:
+        p.tell("You are the "+p.role.name)
+        p.tell("You are a "+role_to_character_type[p.role].name)
+        p.tell("You are a "+character_type_to_alignment[role_to_character_type[p.role]].name)
 
 #Do first night
 
@@ -176,13 +205,21 @@ g = Game(players,0,GamePhase.NIGHT)
 #TODO: MAKE THIS WORK
 
 #Minion info
-
 for p in g.players[CharacterType.MINION]:
     p.tell("Seat "+str(g.demon().seat)+" is the Demon")
-    print(p)
 
+#Demon info
+for p in g.players[CharacterType.DEMON]:
+    for q in g.players[CharacterType.MINION]:
+        p.tell("Seat "+str(q.seat)+" is a Minion")
+    for bluff in g.bluffs:
+        p.tell(bluff.name+" is not in play")
+    
+#Poisoner poisons someone
+for p in g.getplayers():
+    if p.role == Role.POISONER:
+        choice = p.choose_players_for_ability(g,1)
+        choice[0].tokens.append(ReminderToken.POISONER_IS_POISONED)
 
 
 g.printgameinfo()
-
-print(g.players)
