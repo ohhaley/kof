@@ -1,6 +1,7 @@
 import random
 from enum import Enum
 
+#Class representing a given game
 class Game:
     def __init__(self,players,num_days,game_phase,bluffs):
         self.players = players
@@ -8,14 +9,17 @@ class Game:
         self.game_phase = game_phase
         self.bluffs = bluffs
 
+    #Returns the demon
     def demon(self):
         return self.players[CharacterType.DEMON][0]
     
+    #Prints all the info there is about each player -- for debugging
     def printgameinfo(self):
         for role in self.players:
             for p in self.players[role]:
                 print(p.role,p.alignment,p.alive,p.canvote,p.badinfo,p.seat,p.tokens,p.history)
 
+    #Get a list of all players -- helpful since Game.players is a dict
     def getplayers(self):
         all_players = []
         for type in self.players:
@@ -24,6 +28,7 @@ class Game:
         return all_players
 
 
+#Class representing a player
 class Player:
     def __init__(self,role,alignment,alive,canvote,badinfo,seat,tokens,history):
         self.role = role
@@ -35,9 +40,12 @@ class Player:
         self.tokens = tokens
         self.history = history
     
+    #Adds a message to player's message history
     def tell(self,msg):
         self.history.append(msg)
 
+    #Use this function to allow a player to choose X players for their ability.
+    #This is probably one of the function we'll edit the most for our project
     def choose_players_for_ability(self,g,num):
         choices = random.sample(g.getplayers(),num)
         for choice in choices:
@@ -155,7 +163,7 @@ num_players_to_num_roles = {
 
 
 
-
+#Set up grimoire for 7 players
 num_players = 7
 
 players = {
@@ -169,7 +177,7 @@ seats = list(range(0,num_players))
 random.shuffle(seats)
 seat = 0
 
-#Assign roles
+#Assign roles and seats to players
 for type in num_players_to_num_roles[num_players]:
     roles_of_this_type = []
     for role in Role:
@@ -188,8 +196,7 @@ for type in players:
         if p.role in all_roles: all_roles.remove(p.role)
 bluffs = random.sample(all_roles,3)
 
-
-
+#make the Game object
 g = Game(players,0,GamePhase.NIGHT,bluffs)
 
 #Players need to know what their role is
@@ -198,6 +205,8 @@ for type in g.players:
         p.tell("You are the "+p.role.name)
         p.tell("You are a "+role_to_character_type[p.role].name)
         p.tell("You are a "+character_type_to_alignment[role_to_character_type[p.role]].name)
+
+
 
 #Do first night
 
