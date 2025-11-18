@@ -177,6 +177,7 @@ seats = list(range(0,num_players))
 random.shuffle(seats)
 seat = 0
 
+
 #Assign roles and seats to players
 for type in num_players_to_num_roles[num_players]:
     roles_of_this_type = []
@@ -195,6 +196,31 @@ for type in players:
     for p in players[type]:
         if p.role in all_roles: all_roles.remove(p.role)
 bluffs = random.sample(all_roles,3)
+
+
+# roles that aren't in play and aren't bluffs
+available_roles = [role for role in all_roles if role not in bluffs]
+# townsfolk that aren't in play and aren't bluffs
+available_townsfolk = [role for role in available_roles if role_to_character_type[role]==CharacterType.TOWNSFOLK]
+# list of outsiders
+outsiders = players[CharacterType.OUTSIDER]
+# find if there is a drunk, remove it and add a not in play townsfolk in the same seat
+for i in range(len(outsiders)):
+    if outsiders[i].role == Role.DRUNK:
+        seat = outsiders[i].seat
+        players[CharacterType.OUTSIDER].pop(i)
+        new_townsfolk = random.choice(available_townsfolk)
+        players[CharacterType.TOWNSFOLK].append(Player(new_townsfolk, character_type_to_alignment[CharacterType.TOWNSFOLK], True, True, False, seat, [], []))
+
+        # randomly assign a townsfolk to be the drunk
+        drunk_player = random.choice(players[CharacterType.TOWNSFOLK])
+        drunk_player.badinfo = True
+        drunk_player.tokens.append(ReminderToken.DRUNK_IS_THE_DRUNK)
+        break
+
+        
+
+
 
 #make the Game object
 g = Game(players,0,GamePhase.NIGHT,bluffs)
