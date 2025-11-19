@@ -185,6 +185,8 @@ for type in num_players_to_num_roles[num_players]:
     for role in Role:
         if role_to_character_type[role] == type: roles_of_this_type.append(role)
     random_roles = random.sample(roles_of_this_type,num_players_to_num_roles[num_players][type])
+    if type == CharacterType.TOWNSFOLK: random_roles = [Role.WASHERWOMAN, Role.LIBRARIAN, Role.INVESTIGATOR, Role.MAYOR, Role.MONK]
+    if type == CharacterType.MINION: random_roles = [Role.POISONER]
     for role in random_roles:
         players[role_to_character_type[role]].append(Player(role,character_type_to_alignment[role_to_character_type[role]],True,True,False,seats[seat],[],[]))
         seat = seat + 1
@@ -305,7 +307,17 @@ for p in g.getplayers():
         if choice[0].badinfo == False: choice[0].badinfo = True
 
 #Washerwoman gets info
-#TODO
+for p in g.getplayers():
+    if p.role == Role.WASHERWOMAN:
+        possible_pings = g.players[CharacterType.TOWNSFOLK].copy()
+        possible_pings.remove(p)
+        real_person = random.sample(possible_pings,1)[0]
+        possible_pings.remove(real_person)
+        possible_pings = possible_pings+g.players[CharacterType.MINION]+g.players[CharacterType.DEMON]
+        fake_person = random.sample(possible_pings,1)[0]
+        pings = [real_person,fake_person]
+        random.shuffle(pings)
+        p.tell("From your ability you learn either Seat "+str(pings[0].seat)+" or Seat "+str(pings[1].seat)+" is the "+real_person.role.name)
 
 #Librarian gets info
 #TODO
