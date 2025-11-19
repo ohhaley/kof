@@ -317,6 +317,10 @@ for p in g.getplayers():
     if p.role == Role.WASHERWOMAN:
         possible_pings = g.players[CharacterType.TOWNSFOLK].copy()
         possible_pings.remove(p)
+        # remove the drunk from the possible pings
+        for i in range(len(possible_pings)):
+            if ReminderToken.DRUNK_IS_THE_DRUNK in possible_pings[i].tokens:
+                possible_pings.pop(i)
         real_person = random.sample(possible_pings,1)[0]
         possible_pings.remove(real_person)
         possible_pings = possible_pings+g.players[CharacterType.OUTSIDER]+g.players[CharacterType.MINION]+g.players[CharacterType.DEMON]
@@ -333,6 +337,10 @@ for p in g.getplayers():
         if not g.players[CharacterType.OUTSIDER]: p.tell("From your ability you learn there are 0 outsiders.")
         else:
             possible_pings = g.players[CharacterType.OUTSIDER].copy()
+            # add the drunk to possible pings if there is a drunk in play
+            for townsfolk in g.players[CharacterType.TOWNSFOLK]:
+                if townsfolk.role != Role.LIBRARIAN and ReminderToken.DRUNK_IS_THE_DRUNK in townsfolk.tokens:
+                    possible_pings.append(townsfolk)
             real_person = random.sample(possible_pings,1)[0]
             possible_pings.remove(real_person)
             possible_pings = possible_pings+g.players[CharacterType.TOWNSFOLK]+g.players[CharacterType.MINION]+g.players[CharacterType.DEMON]
@@ -341,8 +349,10 @@ for p in g.getplayers():
             real_person.tokens.append(ReminderToken.LIBRARIAN_REAL)
             fake_person.tokens.append(ReminderToken.LIBRARIAN_FAKE)
             pings = [real_person,fake_person]
+            # make sure the librarian learns the Drunk and not a townsfolk if librarian is learning the drunk
+            outsider_to_learn = Role.DRUNK.name if ReminderToken.DRUNK_IS_THE_DRUNK in real_person.tokens else real_person.role.name
             random.shuffle(pings)
-            p.tell("From your ability you learn either Seat "+str(pings[0].seat)+" or Seat "+str(pings[1].seat)+" is the "+real_person.role.name)
+            p.tell("From your ability you learn either Seat "+str(pings[0].seat)+" or Seat "+str(pings[1].seat)+" is the "+ outsider_to_learn)
 
 #Investigator gets info
 for p in g.getplayers():
