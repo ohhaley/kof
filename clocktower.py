@@ -188,20 +188,52 @@ for type in num_players_to_num_roles[num_players]:
         players[role_to_character_type[role]].append(Player(role,character_type_to_alignment[role_to_character_type[role]],True,True,False,seats[seat],[],[]))
         seat = seat + 1
 
-#Generate random bluffs
+# Create list of not in play good characters
 all_roles = []
 for role in Role:
     if role_to_character_type[role]==(CharacterType.TOWNSFOLK or CharacterType.OUTSIDER): all_roles.append(role)
 for type in players:
     for p in players[type]:
         if p.role in all_roles: all_roles.remove(p.role)
-bluffs = random.sample(all_roles,3)
 
 
-# roles that aren't in play and aren't bluffs
-available_roles = [role for role in all_roles if role not in bluffs]
-# townsfolk that aren't in play and aren't bluffs
-available_townsfolk = [role for role in available_roles if role_to_character_type[role]==CharacterType.TOWNSFOLK]
+# handle for the baron
+in_play_minions = players[CharacterType.MINION]
+for minion in in_play_minions:
+    if minion.role == Role.BARON:
+        # find two outsiders to add to the game
+        out_of_play_outsiders = [role for role in all_roles if role_to_character_type[role]==CharacterType.OUTSIDER]
+        added_outsiders = random.sample(out_of_play_outsiders, 2)
+        # randomly pick two townsfolk to remove
+        in_play_townsfolk = players[CharacterType.TOWNSFOLK]
+        townsfolk_removed = random.sample(in_play_townsfolk, 2)
+        # find the role and seat of the removed townsfolk 
+        removed_townsfolk_role_1 = townsfolk_removed[0].role
+        removed_townsfolk_seat_1 = townsfolk_removed[0].seat
+        removed_townsfolk_role_2 = townsfolk_removed[1].role
+        removed_townsfolk_seat_2 = townsfolk_removed[1].seat
+        # create new outsider players
+        new_outsider_1 = Player(out_of_play_outsiders[0],character_type_to_alignment[CharacterType.OUTSIDER], True, True, False, removed_townsfolk_seat_1, [], [])
+        new_outsider_2 = Player(out_of_play_outsiders[1], character_type_to_alignment[CharacterType.OUTSIDER], True, True, False, removed_townsfolk_seat_2, [], [])
+        # add the outsiders 
+        players[CharacterType.OUTSIDER].append(new_outsider_1)
+        players[CharacterType.OUTSIDER].append(new_outsider_2)
+        # remove the townsfolk
+        for i in range(len(players[CharacterType.TOWNSFOLK])):
+            if players[CharacterType.TOWNSFOLK][i].role == removed_townsfolk_role_1 or players[CharacterType.TOWNSFOLK][i].role == removed_townsfolk_role_2:
+                players[CharacterType.TOWNSFOLK].pop(i)
+
+        # add the no longer in play townsfolk to all_roles
+        all_roles.append(removed_townsfolk_role_1)
+        all_roles.append(removed_townsfolk_role_2)
+        # remove the newly added outsiders from all_roles
+        for i in range(len(all_roles)):
+            if all_roles[i] == added_outsiders[0] or all_roles[i] == added_outsiders[1]:
+                all_roles.pop(i)
+
+
+# townsfolk that aren't in play
+available_townsfolk = [role for role in all_roles if role_to_character_type[role]==CharacterType.TOWNSFOLK]
 # list of outsiders
 outsiders = players[CharacterType.OUTSIDER]
 # find if there is a drunk, remove it and add a not in play townsfolk in the same seat
@@ -213,13 +245,22 @@ for i in range(len(outsiders)):
         players[CharacterType.TOWNSFOLK].append(Player(new_townsfolk, character_type_to_alignment[CharacterType.TOWNSFOLK], True, True, False, seat, [], []))
 
         # randomly assign a townsfolk to be the drunk
-        drunk_player = random.choice(players[CharacterType.TOWNSFOLK])
-        drunk_player.badinfo = True
-        drunk_player.tokens.append(ReminderToken.DRUNK_IS_THE_DRUNK)
+        random_player = random.randint(0, len(players[CharacterType.TOWNSFOLK]) - 1)
+        players[CharacterType.TOWNSFOLK][random_player].badinfo = True
+        players[CharacterType.TOWNSFOLK][random_player].tokens.append(ReminderToken.DRUNK_IS_THE_DRUNK)
+        
+        # add drunk to all_roles
+        all_roles.append(Role.DRUNK)
+        # remove the added townsfolk from all_roles
+        for i in range(len(all_roles)):
+            if all_roles[i] == new_townsfolk:
+                all_roles.pop(i)
+                
         break
 
-        
 
+# generate random bluffs  
+bluffs = random.sample(all_roles,3)
 
 
 #make the Game object
