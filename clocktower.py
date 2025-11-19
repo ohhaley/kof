@@ -342,10 +342,48 @@ for p in g.getplayers():
 
 
 #Empath gets info
+evil_empath_neighbors = 0
+for i in range(len(player_list)):
+    if player_list[i].role == Role.EMPATH:
+        if i == len(player_list) - 1:
+            if player_list[0].alignment == Alignment.EVIL:
+                evil_empath_neighbors += 1
+            if player_list[i-1].alignment == Alignment.EVIL:
+                evil_empath_neighbors += 1
+        elif i == 0:
+            if player_list[i+1].alignment == Alignment.EVIL:
+                evil_empath_neighbors += 1
+            if player_list[len(player_list)-1].alignment == Alignment.EVIL:
+                evil_empath_neighbors += 1
+        else:
+            if player_list[i+1].alignment == Alignment.EVIL:
+                evil_empath_neighbors += 1
+            if player_list[i-1].alignment == Alignment.EVIL:
+                evil_empath_neighbors += 1
+
+for p in g.getplayers():
+    if p.role == Role.EMPATH:
+        p.tell(str(evil_empath_neighbors) + "of your neighbors are evil")
+
+                
+
 
 
 #Fortune teller gets info
-#TODO
+# randomly assign fortune teller red herring to a good player
+good_players = [player for player in g.getplayers() if player.alignment == Alignment.GOOD]
+red_herring = random.choice(good_players)
+red_herring.tokens.append(ReminderToken.FORTUNE_TELLER_RED_HERRING)
+for p in g.getplayers():
+    if p.role == Role.FORTUNE_TELLER:
+        p.tell("Pick two players for your ability")
+        ft_choices = p.choose_players_for_ability(g,2)
+        if ReminderToken.FORTUNE_TELLER_RED_HERRING in ft_choices[0].tokens or role_to_character_type[ft_choices[0].role] == CharacterType.DEMON or ReminderToken.FORTUNE_TELLER_RED_HERRING in ft_choices[1].tokens or role_to_character_type[ft_choices[1].role] == CharacterType.DEMON:
+            p.tell("One of seat" + str(ft_choices[0].seat) + "or seat" + str(ft_choices[1].seat) + "is the demon")
+        else:
+            p.tell("Neither seat" + str(ft_choices[0].seat) + "or seat" + str(ft_choices[1].seat) + "is the demon")
+
+
 
 
 
