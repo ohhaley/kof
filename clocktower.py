@@ -25,6 +25,7 @@ class Game:
         for type in self.players:
             for p in self.players[type]: all_players.append(p)
         print(all_players)
+        all_players = sorted(all_players, key=lambda player: player.seat)
         return all_players
 
 
@@ -280,6 +281,8 @@ for type in g.players:
 #The Drunk
 #TODO: MAKE THIS WORK
 
+player_list = g.getplayers()
+
 #Minion info
 for p in g.players[CharacterType.MINION]:
     p.tell("Seat "+str(g.demon().seat)+" is the Demon")
@@ -311,10 +314,23 @@ for p in g.getplayers():
 #TODO
 
 #Chef gets info
-#TODO
+evil_pairs = 0
+for i in range(len(player_list)):
+    if i != len(player_list) - 1:
+        if player_list[i].alignment == Alignment.EVIL and player_list[i+1].alignment == Alignment.EVIL:
+            evil_pairs += 1
+    else:
+        if player_list[i].alignment == Alignment.EVIL and player_list[0].alignment == Alignment.EVIL:
+            evil_pairs += 1
+
+for p in g.getplayers():
+    if p.role == Role.CHEF:
+        p.tell("There are " + str(evil_pairs) + "pairs of evil players")
+    
+
 
 #Empath gets info
-#TODO
+
 
 #Fortune teller gets info
 #TODO
