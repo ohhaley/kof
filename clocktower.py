@@ -318,9 +318,9 @@ for p in g.getplayers():
         possible_pings = g.players[CharacterType.TOWNSFOLK].copy()
         possible_pings.remove(p)
         # remove the drunk from the possible pings
-        for i in range(len(possible_pings)):
-            if ReminderToken.DRUNK_IS_THE_DRUNK in possible_pings[i].tokens:
-                possible_pings.pop(i)
+        for ping in possible_pings:
+            if ReminderToken.DRUNK_IS_THE_DRUNK in ping.tokes:
+                possible_pings.remove(ping)
         real_person = random.sample(possible_pings,1)[0]
         possible_pings.remove(real_person)
         possible_pings = possible_pings+g.players[CharacterType.OUTSIDER]+g.players[CharacterType.MINION]+g.players[CharacterType.DEMON]
