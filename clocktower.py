@@ -301,5 +301,24 @@ for p in g.getplayers():
         choice[0].tokens.append(ReminderToken.POISONER_IS_POISONED)
         if choice[0].badinfo == False: choice[0].badinfo = True
 
+#Washerwoman gets info
+#TODO
+
+#Librarian gets info
+#TODO
+
+#Investigator gets info
+#TODO
+
+#Chef gets info
+#TODO
+
+#Empath gets info
+#TODO
+
+#Fortune teller gets info
+#TODO
+
+
 
 g.printgameinfo()
