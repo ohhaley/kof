@@ -377,19 +377,26 @@ for p in g.getplayers():
 
 #Empath gets info
 evil_empath_neighbors = 0
+empath_neighbor_seats = []
 for i in range(len(player_list)):
     if player_list[i].role == Role.EMPATH:
         if i == len(player_list) - 1:
+            empath_neighbor_seats.append(0)
+            empath_neighbor_seats.append(i-1)
             if player_list[0].alignment == Alignment.EVIL:
                 evil_empath_neighbors += 1
             if player_list[i-1].alignment == Alignment.EVIL:
                 evil_empath_neighbors += 1
         elif i == 0:
+            empath_neighbor_seats.append(i+1)
+            empath_neighbor_seats.append(len(player_list)-1)
             if player_list[i+1].alignment == Alignment.EVIL:
                 evil_empath_neighbors += 1
             if player_list[len(player_list)-1].alignment == Alignment.EVIL:
                 evil_empath_neighbors += 1
         else:
+            empath_neighbor_seats.append(i+1)
+            empath_neighbor_seats.append(i-1)
             if player_list[i+1].alignment == Alignment.EVIL:
                 evil_empath_neighbors += 1
             if player_list[i-1].alignment == Alignment.EVIL:
@@ -397,7 +404,7 @@ for i in range(len(player_list)):
 
 for p in g.getplayers():
     if p.role == Role.EMPATH:
-        p.tell(str(evil_empath_neighbors) + "of your neighbors are evil")
+        p.tell(str(evil_empath_neighbors) + "of seats" + str(empath_neighbor_seats[0]) + "and" + str(empath_neighbor_seats[1]) + "are evil")
 
                 
 
