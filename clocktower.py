@@ -24,7 +24,6 @@ class Game:
         all_players = []
         for type in self.players:
             for p in self.players[type]: all_players.append(p)
-        print(all_players)
         all_players = sorted(all_players, key=lambda player: player.seat)
         return all_players
 
@@ -186,7 +185,7 @@ for type in num_players_to_num_roles[num_players]:
         if role_to_character_type[role] == type: roles_of_this_type.append(role)
     random_roles = random.sample(roles_of_this_type,num_players_to_num_roles[num_players][type])
     if type == CharacterType.TOWNSFOLK: random_roles = [Role.WASHERWOMAN, Role.LIBRARIAN, Role.INVESTIGATOR, Role.MAYOR, Role.MONK]
-    if type == CharacterType.MINION: random_roles = [Role.POISONER]
+    if type == CharacterType.MINION: random_roles = [Role.BARON]
     for role in random_roles:
         players[role_to_character_type[role]].append(Player(role,character_type_to_alignment[role_to_character_type[role]],True,True,False,seats[seat],[],[]))
         seat = seat + 1
@@ -194,7 +193,7 @@ for type in num_players_to_num_roles[num_players]:
 # Create list of not in play good characters
 all_roles = []
 for role in Role:
-    if role_to_character_type[role]==(CharacterType.TOWNSFOLK or CharacterType.OUTSIDER): all_roles.append(role)
+    if role_to_character_type[role]==CharacterType.TOWNSFOLK or role_to_character_type[role]==CharacterType.OUTSIDER: all_roles.append(role)
 for type in players:
     for p in players[type]:
         if p.role in all_roles: all_roles.remove(p.role)
@@ -216,23 +215,28 @@ for minion in in_play_minions:
         removed_townsfolk_role_2 = townsfolk_removed[1].role
         removed_townsfolk_seat_2 = townsfolk_removed[1].seat
         # create new outsider players
-        new_outsider_1 = Player(out_of_play_outsiders[0],character_type_to_alignment[CharacterType.OUTSIDER], True, True, False, removed_townsfolk_seat_1, [], [])
-        new_outsider_2 = Player(out_of_play_outsiders[1], character_type_to_alignment[CharacterType.OUTSIDER], True, True, False, removed_townsfolk_seat_2, [], [])
+        new_outsider_1 = Player(added_outsiders[0],character_type_to_alignment[CharacterType.OUTSIDER], True, True, False, removed_townsfolk_seat_1, [], [])
+        new_outsider_2 = Player(added_outsiders[1], character_type_to_alignment[CharacterType.OUTSIDER], True, True, False, removed_townsfolk_seat_2, [], [])
         # add the outsiders 
         players[CharacterType.OUTSIDER].append(new_outsider_1)
         players[CharacterType.OUTSIDER].append(new_outsider_2)
         # remove the townsfolk
-        for i in range(len(players[CharacterType.TOWNSFOLK])):
-            if players[CharacterType.TOWNSFOLK][i].role == removed_townsfolk_role_1 or players[CharacterType.TOWNSFOLK][i].role == removed_townsfolk_role_2:
-                players[CharacterType.TOWNSFOLK].pop(i)
+        for p in players[CharacterType.TOWNSFOLK]:
+            if p==townsfolk_removed[0] or p==townsfolk_removed[1]: players[CharacterType.TOWNSFOLK].remove(p)
+        #for i in range(len(players[CharacterType.TOWNSFOLK])):
+            #if players[CharacterType.TOWNSFOLK][i].role == removed_townsfolk_role_1 or players[CharacterType.TOWNSFOLK][i].role == removed_townsfolk_role_2:
+                #players[CharacterType.TOWNSFOLK].pop(i)
 
         # add the no longer in play townsfolk to all_roles
         all_roles.append(removed_townsfolk_role_1)
         all_roles.append(removed_townsfolk_role_2)
         # remove the newly added outsiders from all_roles
-        for i in range(len(all_roles)):
-            if all_roles[i] == added_outsiders[0] or all_roles[i] == added_outsiders[1]:
-                all_roles.pop(i)
+        for role in all_roles:
+            if role == added_outsiders[0] or role == added_outsiders[1]: all_roles.remove(role)
+        print(added_outsiders)
+        #for i in range(len(all_roles)):
+            #if all_roles[i] == added_outsiders[0] or all_roles[i] == added_outsiders[1]:
+                #all_roles.pop(i)
 
 
 # townsfolk that aren't in play
@@ -255,9 +259,11 @@ for i in range(len(outsiders)):
         # add drunk to all_roles
         all_roles.append(Role.DRUNK)
         # remove the added townsfolk from all_roles
-        for i in range(len(all_roles)):
-            if all_roles[i] == new_townsfolk:
-                all_roles.pop(i)
+        for role in all_roles:
+            if role == new_townsfolk: all_roles.remove(role)
+        #for i in range(len(all_roles)):
+            #if all_roles[i] == new_townsfolk:
+                #all_roles.pop(i)
                 
         break
 
@@ -313,17 +319,45 @@ for p in g.getplayers():
         possible_pings.remove(p)
         real_person = random.sample(possible_pings,1)[0]
         possible_pings.remove(real_person)
-        possible_pings = possible_pings+g.players[CharacterType.MINION]+g.players[CharacterType.DEMON]
+        possible_pings = possible_pings+g.players[CharacterType.OUTSIDER]+g.players[CharacterType.MINION]+g.players[CharacterType.DEMON]
         fake_person = random.sample(possible_pings,1)[0]
+        real_person.tokens.append(ReminderToken.WASHERWOMAN_REAL)
+        fake_person.tokens.append(ReminderToken.WASHERWOMAN_FAKE)
         pings = [real_person,fake_person]
         random.shuffle(pings)
         p.tell("From your ability you learn either Seat "+str(pings[0].seat)+" or Seat "+str(pings[1].seat)+" is the "+real_person.role.name)
 
 #Librarian gets info
-#TODO
+for p in g.getplayers():
+    if p.role == Role.LIBRARIAN:
+        if not g.players[CharacterType.OUTSIDER]: p.tell("From your ability you learn there are 0 outsiders.")
+        else:
+            possible_pings = g.players[CharacterType.OUTSIDER].copy()
+            real_person = random.sample(possible_pings,1)[0]
+            possible_pings.remove(real_person)
+            possible_pings = possible_pings+g.players[CharacterType.TOWNSFOLK]+g.players[CharacterType.MINION]+g.players[CharacterType.DEMON]
+            possible_pings.remove(p)
+            fake_person = random.sample(possible_pings,1)[0]
+            real_person.tokens.append(ReminderToken.LIBRARIAN_REAL)
+            fake_person.tokens.append(ReminderToken.LIBRARIAN_FAKE)
+            pings = [real_person,fake_person]
+            random.shuffle(pings)
+            p.tell("From your ability you learn either Seat "+str(pings[0].seat)+" or Seat "+str(pings[1].seat)+" is the "+real_person.role.name)
 
 #Investigator gets info
-#TODO
+for p in g.getplayers():
+    if p.role == Role.INVESTIGATOR:
+        possible_pings = g.players[CharacterType.MINION].copy()
+        real_person = random.sample(possible_pings,1)[0]
+        possible_pings.remove(real_person)
+        possible_pings = possible_pings+g.players[CharacterType.TOWNSFOLK]+g.players[CharacterType.OUTSIDER]+g.players[CharacterType.DEMON]
+        possible_pings.remove(p)
+        fake_person = random.sample(possible_pings,1)[0]
+        real_person.tokens.append(ReminderToken.INVESTIGATOR_REAL)
+        fake_person.tokens.append(ReminderToken.INVESTIGATOR_FAKE)
+        pings = [real_person,fake_person]
+        random.shuffle(pings)
+        p.tell("From your ability you learn either Seat "+str(pings[0].seat)+" or Seat "+str(pings[1].seat)+" is the "+real_person.role.name)
 
 #Chef gets info
 evil_pairs = 0
