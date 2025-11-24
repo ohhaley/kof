@@ -113,6 +113,7 @@ class ReminderToken(Enum):
     POISONER_IS_POISONED = 19
     SPY_MAY_REGISTER_GOOD = 20
     IMP_WILL_DIE_TONIGHT = 21
+    MINION_IS_THE_DEMON = 22
 
 
 
@@ -303,7 +304,7 @@ for p in g.players[CharacterType.DEMON]:
         p.tell(bluff.name+" is not in play")
     
 #Poisoner poisons someone
-def poisoner():
+def poisoner(g):
     for p in g.getplayers():
         if ReminderToken.POISONER_IS_POISONED in p.tokens: p.tokens.remove(ReminderToken.POISONER_IS_POISONED)
     for p in g.getplayers():
@@ -312,10 +313,10 @@ def poisoner():
             choice = p.choose_players_for_ability(g,1)
             choice[0].tokens.append(ReminderToken.POISONER_IS_POISONED)
             if choice[0].badinfo == False: choice[0].badinfo = True
-poisoner()
+poisoner(g)
 
 #Washerwoman gets info
-def washerwoman():
+def washerwoman(g):
     for p in g.getplayers():
         if p.role == Role.WASHERWOMAN:
             possible_pings = g.players[CharacterType.TOWNSFOLK].copy()
@@ -333,10 +334,10 @@ def washerwoman():
             pings = [real_person,fake_person]
             random.shuffle(pings)
             p.tell("From your ability you learn either Seat "+str(pings[0].seat)+" or Seat "+str(pings[1].seat)+" is the "+real_person.role.name)
-washerwoman()
+washerwoman(g)
 
 #Librarian gets info
-def librarian():
+def librarian(g):
     for p in g.getplayers():
         if p.role == Role.LIBRARIAN:
             if not g.players[CharacterType.OUTSIDER]: p.tell("From your ability you learn there are 0 outsiders.")
@@ -358,10 +359,10 @@ def librarian():
                 outsider_to_learn = Role.DRUNK.name if ReminderToken.DRUNK_IS_THE_DRUNK in real_person.tokens else real_person.role.name
                 random.shuffle(pings)
                 p.tell("From your ability you learn either Seat "+str(pings[0].seat)+" or Seat "+str(pings[1].seat)+" is the "+ outsider_to_learn)
-librarian()
+librarian(g)
 
 #Investigator gets info
-def investigator():
+def investigator(g):
     for p in g.getplayers():
         if p.role == Role.INVESTIGATOR:
             possible_pings = g.players[CharacterType.MINION].copy()
@@ -375,10 +376,10 @@ def investigator():
             pings = [real_person,fake_person]
             random.shuffle(pings)
             p.tell("From your ability you learn either Seat "+str(pings[0].seat)+" or Seat "+str(pings[1].seat)+" is the "+real_person.role.name)
-investigator()
+investigator(g)
 
 #Chef gets info
-def chef():
+def chef(g):
     evil_pairs = 0
     for i in range(len(player_list)):
         if i != len(player_list) - 1:
@@ -391,11 +392,11 @@ def chef():
     for p in g.getplayers():
         if p.role == Role.CHEF:
             p.tell("There are " + str(evil_pairs) + "pairs of evil players")
-chef()
+chef(g)
 
 
 #Empath gets info
-def empath():
+def empath(g):
     evil_empath_neighbors = 0
     empath_neighbor_seats = []
     for i in range(len(player_list)):
@@ -424,7 +425,7 @@ def empath():
     for p in g.getplayers():
         if p.role == Role.EMPATH:
             p.tell(str(evil_empath_neighbors) + "of seats" + str(empath_neighbor_seats[0]) + "and" + str(empath_neighbor_seats[1]) + "are evil")
-empath()
+empath(g)
                 
 
 
@@ -438,7 +439,7 @@ def red_herring(g):
 red_herring(g)
 
 #Fortune teller gets info
-def fortune_teller():
+def fortune_teller(g):
     for p in g.getplayers():
         if p.role == Role.FORTUNE_TELLER:
             p.tell("Pick two players for your ability")
@@ -447,7 +448,7 @@ def fortune_teller():
                 p.tell("One of seat" + str(ft_choices[0].seat) + "or seat" + str(ft_choices[1].seat) + "is the demon")
             else:
                 p.tell("Neither seat" + str(ft_choices[0].seat) + "or seat" + str(ft_choices[1].seat) + "is the demon")
-fortune_teller()
+fortune_teller(g)
 
 def butler():
     #Butler gets info
@@ -461,5 +462,45 @@ def butler():
 
 
 # other nights
+# poisoner goes first if alive
+for p in g.getplayers():
+    if p.role == Role.POISONER and p.alive:
+        poisoner()
+
+
+# monk selects a player to protect
+def monk(g):
+    for p in g.getplayers:
+        if p.role == Role.MONK and p.alive:
+            p.tell("Pick one player for your ability")
+            choice = p.choose_players_for_ability(g, 1)
+            if ReminderToken.DRUNK_IS_THE_DRUNK not in p.tokens and ReminderToken.POISONER_IS_POISONED not in p.tokens:
+                choice[0].tokens.append(ReminderToken.MONK_SAFE_TONIGHT)
+monk(g)
+
+# spy goes next
+
+
+# tell scarlet woman they become the demon, if they do
+def scarlet_woman(g):
+    for p in g.getplayers:
+        if p.role == Role.SCARLET_WOMAN and ReminderToken.MINION_IS_THE_DEMON in p.tokens:
+            p.tell("You are the " + Role.IMP.name)
+            p.tell("You are a " + role_to_character_type[Role.IMP].name)
+            p.tell("You are " + character_type_to_alignment[CharacterType.DEMON].name)
+            p.tokens.remove(ReminderToken.MINION_IS_THE_DEMON)
+scarlet_woman(g)
+
+# imp next
+def imp(g):
+    for p in g.getplayers:
+        if p.role == Role.IMP:
+            p.tell("Pick one player for your ability")
+            choice = p.choose_players_for_ability
+            if ReminderToken.POISONER_IS_POISONED not in p.tokens and ReminderToken.MONK_SAFE_TONIGHT not in choice[0].tokens:
+                choice[0].tokens.append(ReminderToken.IMP_WILL_DIE_TONIGHT)
+
+
+
 
 g.printgameinfo()
