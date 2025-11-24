@@ -233,7 +233,7 @@ for minion in in_play_minions:
         # remove the newly added outsiders from all_roles
         for role in all_roles:
             if role == added_outsiders[0] or role == added_outsiders[1]: all_roles.remove(role)
-        print(added_outsiders)
+        #print(added_outsiders)
         #for i in range(len(all_roles)):
             #if all_roles[i] == added_outsiders[0] or all_roles[i] == added_outsiders[1]:
                 #all_roles.pop(i)
@@ -319,7 +319,7 @@ for p in g.getplayers():
         possible_pings.remove(p)
         # remove the drunk from the possible pings
         for ping in possible_pings:
-            if ReminderToken.DRUNK_IS_THE_DRUNK in ping.tokes:
+            if ReminderToken.DRUNK_IS_THE_DRUNK in ping.tokens:
                 possible_pings.remove(ping)
         real_person = random.sample(possible_pings,1)[0]
         possible_pings.remove(real_person)
@@ -435,7 +435,12 @@ for p in g.getplayers():
             p.tell("Neither seat" + str(ft_choices[0].seat) + "or seat" + str(ft_choices[1].seat) + "is the demon")
 
 
-
+#Butler gets info
+for p in g.getplayers():
+    if p.role == Role.BUTLER:
+        choice = p.choose_players_for_ability(g,1)
+        choice.tokens.append(ReminderToken.BUTLER_MASTER)
+        #They CAN CHOOSE THEMSELVES! TODO fix.
 
 
 g.printgameinfo()
