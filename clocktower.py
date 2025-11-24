@@ -303,144 +303,156 @@ for p in g.players[CharacterType.DEMON]:
         p.tell(bluff.name+" is not in play")
     
 #Poisoner poisons someone
-for p in g.getplayers():
-    if ReminderToken.POISONER_IS_POISONED in p.tokens: p.tokens.remove(ReminderToken.POISONER_IS_POISONED)
-for p in g.getplayers():
-    if p.role == Role.POISONER:
-        p.tell("Pick 1 player for your ability")
-        choice = p.choose_players_for_ability(g,1)
-        choice[0].tokens.append(ReminderToken.POISONER_IS_POISONED)
-        if choice[0].badinfo == False: choice[0].badinfo = True
+def poisoner():
+    for p in g.getplayers():
+        if ReminderToken.POISONER_IS_POISONED in p.tokens: p.tokens.remove(ReminderToken.POISONER_IS_POISONED)
+    for p in g.getplayers():
+        if p.role == Role.POISONER:
+            p.tell("Pick 1 player for your ability")
+            choice = p.choose_players_for_ability(g,1)
+            choice[0].tokens.append(ReminderToken.POISONER_IS_POISONED)
+            if choice[0].badinfo == False: choice[0].badinfo = True
+poisoner()
 
 #Washerwoman gets info
-for p in g.getplayers():
-    if p.role == Role.WASHERWOMAN:
-        possible_pings = g.players[CharacterType.TOWNSFOLK].copy()
-        possible_pings.remove(p)
-        # remove the drunk from the possible pings
-        for ping in possible_pings:
-            if ReminderToken.DRUNK_IS_THE_DRUNK in ping.tokens:
-                possible_pings.remove(ping)
-        real_person = random.sample(possible_pings,1)[0]
-        possible_pings.remove(real_person)
-        possible_pings = possible_pings+g.players[CharacterType.OUTSIDER]+g.players[CharacterType.MINION]+g.players[CharacterType.DEMON]
-        fake_person = random.sample(possible_pings,1)[0]
-        real_person.tokens.append(ReminderToken.WASHERWOMAN_REAL)
-        fake_person.tokens.append(ReminderToken.WASHERWOMAN_FAKE)
-        pings = [real_person,fake_person]
-        random.shuffle(pings)
-        p.tell("From your ability you learn either Seat "+str(pings[0].seat)+" or Seat "+str(pings[1].seat)+" is the "+real_person.role.name)
-
-#Librarian gets info
-for p in g.getplayers():
-    if p.role == Role.LIBRARIAN:
-        if not g.players[CharacterType.OUTSIDER]: p.tell("From your ability you learn there are 0 outsiders.")
-        else:
-            possible_pings = g.players[CharacterType.OUTSIDER].copy()
-            # add the drunk to possible pings if there is a drunk in play
-            for townsfolk in g.players[CharacterType.TOWNSFOLK]:
-                if townsfolk.role != Role.LIBRARIAN and ReminderToken.DRUNK_IS_THE_DRUNK in townsfolk.tokens:
-                    possible_pings.append(townsfolk)
+def washerwoman():
+    for p in g.getplayers():
+        if p.role == Role.WASHERWOMAN:
+            possible_pings = g.players[CharacterType.TOWNSFOLK].copy()
+            possible_pings.remove(p)
+            # remove the drunk from the possible pings
+            for ping in possible_pings:
+                if ReminderToken.DRUNK_IS_THE_DRUNK in ping.tokes:
+                    possible_pings.remove(ping)
             real_person = random.sample(possible_pings,1)[0]
             possible_pings.remove(real_person)
-            possible_pings = possible_pings+g.players[CharacterType.TOWNSFOLK]+g.players[CharacterType.MINION]+g.players[CharacterType.DEMON]
-            possible_pings.remove(p)
+            possible_pings = possible_pings+g.players[CharacterType.OUTSIDER]+g.players[CharacterType.MINION]+g.players[CharacterType.DEMON]
             fake_person = random.sample(possible_pings,1)[0]
-            real_person.tokens.append(ReminderToken.LIBRARIAN_REAL)
-            fake_person.tokens.append(ReminderToken.LIBRARIAN_FAKE)
+            real_person.tokens.append(ReminderToken.WASHERWOMAN_REAL)
+            fake_person.tokens.append(ReminderToken.WASHERWOMAN_FAKE)
             pings = [real_person,fake_person]
-            # make sure the librarian learns the Drunk and not a townsfolk if librarian is learning the drunk
-            outsider_to_learn = Role.DRUNK.name if ReminderToken.DRUNK_IS_THE_DRUNK in real_person.tokens else real_person.role.name
             random.shuffle(pings)
-            p.tell("From your ability you learn either Seat "+str(pings[0].seat)+" or Seat "+str(pings[1].seat)+" is the "+ outsider_to_learn)
+            p.tell("From your ability you learn either Seat "+str(pings[0].seat)+" or Seat "+str(pings[1].seat)+" is the "+real_person.role.name)
+washerwoman()
+
+#Librarian gets info
+def librarian():
+    for p in g.getplayers():
+        if p.role == Role.LIBRARIAN:
+            if not g.players[CharacterType.OUTSIDER]: p.tell("From your ability you learn there are 0 outsiders.")
+            else:
+                possible_pings = g.players[CharacterType.OUTSIDER].copy()
+                # add the drunk to possible pings if there is a drunk in play
+                for townsfolk in g.players[CharacterType.TOWNSFOLK]:
+                    if townsfolk.role != Role.LIBRARIAN and ReminderToken.DRUNK_IS_THE_DRUNK in townsfolk.tokens:
+                        possible_pings.append(townsfolk)
+                real_person = random.sample(possible_pings,1)[0]
+                possible_pings.remove(real_person)
+                possible_pings = possible_pings+g.players[CharacterType.TOWNSFOLK]+g.players[CharacterType.MINION]+g.players[CharacterType.DEMON]
+                possible_pings.remove(p)
+                fake_person = random.sample(possible_pings,1)[0]
+                real_person.tokens.append(ReminderToken.LIBRARIAN_REAL)
+                fake_person.tokens.append(ReminderToken.LIBRARIAN_FAKE)
+                pings = [real_person,fake_person]
+                # make sure the librarian learns the Drunk and not a townsfolk if librarian is learning the drunk
+                outsider_to_learn = Role.DRUNK.name if ReminderToken.DRUNK_IS_THE_DRUNK in real_person.tokens else real_person.role.name
+                random.shuffle(pings)
+                p.tell("From your ability you learn either Seat "+str(pings[0].seat)+" or Seat "+str(pings[1].seat)+" is the "+ outsider_to_learn)
+librarian()
 
 #Investigator gets info
-for p in g.getplayers():
-    if p.role == Role.INVESTIGATOR:
-        possible_pings = g.players[CharacterType.MINION].copy()
-        real_person = random.sample(possible_pings,1)[0]
-        possible_pings.remove(real_person)
-        possible_pings = possible_pings+g.players[CharacterType.TOWNSFOLK]+g.players[CharacterType.OUTSIDER]+g.players[CharacterType.DEMON]
-        possible_pings.remove(p)
-        fake_person = random.sample(possible_pings,1)[0]
-        real_person.tokens.append(ReminderToken.INVESTIGATOR_REAL)
-        fake_person.tokens.append(ReminderToken.INVESTIGATOR_FAKE)
-        pings = [real_person,fake_person]
-        random.shuffle(pings)
-        p.tell("From your ability you learn either Seat "+str(pings[0].seat)+" or Seat "+str(pings[1].seat)+" is the "+real_person.role.name)
+def investigator():
+    for p in g.getplayers():
+        if p.role == Role.INVESTIGATOR:
+            possible_pings = g.players[CharacterType.MINION].copy()
+            real_person = random.sample(possible_pings,1)[0]
+            possible_pings.remove(real_person)
+            possible_pings = possible_pings+g.players[CharacterType.TOWNSFOLK]+g.players[CharacterType.OUTSIDER]+g.players[CharacterType.DEMON]
+            possible_pings.remove(p)
+            fake_person = random.sample(possible_pings,1)[0]
+            real_person.tokens.append(ReminderToken.INVESTIGATOR_REAL)
+            fake_person.tokens.append(ReminderToken.INVESTIGATOR_FAKE)
+            pings = [real_person,fake_person]
+            random.shuffle(pings)
+            p.tell("From your ability you learn either Seat "+str(pings[0].seat)+" or Seat "+str(pings[1].seat)+" is the "+real_person.role.name)
+investigator()
 
 #Chef gets info
-evil_pairs = 0
-for i in range(len(player_list)):
-    if i != len(player_list) - 1:
-        if player_list[i].alignment == Alignment.EVIL and player_list[i+1].alignment == Alignment.EVIL:
-            evil_pairs += 1
-    else:
-        if player_list[i].alignment == Alignment.EVIL and player_list[0].alignment == Alignment.EVIL:
-            evil_pairs += 1
+def chef():
+    evil_pairs = 0
+    for i in range(len(player_list)):
+        if i != len(player_list) - 1:
+            if player_list[i].alignment == Alignment.EVIL and player_list[i+1].alignment == Alignment.EVIL:
+                evil_pairs += 1
+        else:
+            if player_list[i].alignment == Alignment.EVIL and player_list[0].alignment == Alignment.EVIL:
+                evil_pairs += 1
 
-for p in g.getplayers():
-    if p.role == Role.CHEF:
-        p.tell("There are " + str(evil_pairs) + "pairs of evil players")
-    
+    for p in g.getplayers():
+        if p.role == Role.CHEF:
+            p.tell("There are " + str(evil_pairs) + "pairs of evil players")
+chef()
 
 
 #Empath gets info
-evil_empath_neighbors = 0
-empath_neighbor_seats = []
-for i in range(len(player_list)):
-    if player_list[i].role == Role.EMPATH:
-        if i == len(player_list) - 1:
-            empath_neighbor_seats.append(0)
-            empath_neighbor_seats.append(i-1)
-            if player_list[0].alignment == Alignment.EVIL:
-                evil_empath_neighbors += 1
-            if player_list[i-1].alignment == Alignment.EVIL:
-                evil_empath_neighbors += 1
-        elif i == 0:
-            empath_neighbor_seats.append(i+1)
-            empath_neighbor_seats.append(len(player_list)-1)
-            if player_list[i+1].alignment == Alignment.EVIL:
-                evil_empath_neighbors += 1
-            if player_list[len(player_list)-1].alignment == Alignment.EVIL:
-                evil_empath_neighbors += 1
-        else:
-            empath_neighbor_seats.append(i+1)
-            empath_neighbor_seats.append(i-1)
-            if player_list[i+1].alignment == Alignment.EVIL:
-                evil_empath_neighbors += 1
-            if player_list[i-1].alignment == Alignment.EVIL:
-                evil_empath_neighbors += 1
-
-for p in g.getplayers():
-    if p.role == Role.EMPATH:
-        p.tell(str(evil_empath_neighbors) + "of seats" + str(empath_neighbor_seats[0]) + "and" + str(empath_neighbor_seats[1]) + "are evil")
-
+def empath():
+    evil_empath_neighbors = 0
+    empath_neighbor_seats = []
+    for i in range(len(player_list)):
+        if player_list[i].role == Role.EMPATH:
+            if i == len(player_list) - 1:
+                empath_neighbor_seats.append(0)
+                empath_neighbor_seats.append(i-1)
+                if player_list[0].alignment == Alignment.EVIL:
+                    evil_empath_neighbors += 1
+                if player_list[i-1].alignment == Alignment.EVIL:
+                    evil_empath_neighbors += 1
+            elif i == 0:
+                empath_neighbor_seats.append(i+1)
+                empath_neighbor_seats.append(len(player_list)-1)
+                if player_list[i+1].alignment == Alignment.EVIL:
+                    evil_empath_neighbors += 1
+                if player_list[len(player_list)-1].alignment == Alignment.EVIL:
+                    evil_empath_neighbors += 1
+            else:
+                empath_neighbor_seats.append(i+1)
+                empath_neighbor_seats.append(i-1)
+                if player_list[i+1].alignment == Alignment.EVIL:
+                    evil_empath_neighbors += 1
+                if player_list[i-1].alignment == Alignment.EVIL:
+                    evil_empath_neighbors += 1
+    for p in g.getplayers():
+        if p.role == Role.EMPATH:
+            p.tell(str(evil_empath_neighbors) + "of seats" + str(empath_neighbor_seats[0]) + "and" + str(empath_neighbor_seats[1]) + "are evil")
+empath()
                 
 
 
 
-#Fortune teller gets info
+
 # randomly assign fortune teller red herring to a good player
-good_players = [player for player in g.getplayers() if player.alignment == Alignment.GOOD]
-red_herring = random.choice(good_players)
-red_herring.tokens.append(ReminderToken.FORTUNE_TELLER_RED_HERRING)
-for p in g.getplayers():
-    if p.role == Role.FORTUNE_TELLER:
-        p.tell("Pick two players for your ability")
-        ft_choices = p.choose_players_for_ability(g,2)
-        if ReminderToken.FORTUNE_TELLER_RED_HERRING in ft_choices[0].tokens or role_to_character_type[ft_choices[0].role] == CharacterType.DEMON or ReminderToken.FORTUNE_TELLER_RED_HERRING in ft_choices[1].tokens or role_to_character_type[ft_choices[1].role] == CharacterType.DEMON:
-            p.tell("One of seat" + str(ft_choices[0].seat) + "or seat" + str(ft_choices[1].seat) + "is the demon")
-        else:
-            p.tell("Neither seat" + str(ft_choices[0].seat) + "or seat" + str(ft_choices[1].seat) + "is the demon")
+def red_herring(g):
+    good_players = [player for player in g.getplayers() if player.alignment == Alignment.GOOD]
+    red_herring = random.choice(good_players)
+    red_herring.tokens.append(ReminderToken.FORTUNE_TELLER_RED_HERRING)
+red_herring(g)
+
+#Fortune teller gets info
+def fortune_teller():
+    for p in g.getplayers():
+        if p.role == Role.FORTUNE_TELLER:
+            p.tell("Pick two players for your ability")
+            ft_choices = p.choose_players_for_ability(g,2)
+            if ReminderToken.FORTUNE_TELLER_RED_HERRING in ft_choices[0].tokens or role_to_character_type[ft_choices[0].role] == CharacterType.DEMON or ReminderToken.FORTUNE_TELLER_RED_HERRING in ft_choices[1].tokens or role_to_character_type[ft_choices[1].role] == CharacterType.DEMON:
+                p.tell("One of seat" + str(ft_choices[0].seat) + "or seat" + str(ft_choices[1].seat) + "is the demon")
+            else:
+                p.tell("Neither seat" + str(ft_choices[0].seat) + "or seat" + str(ft_choices[1].seat) + "is the demon")
+fortune_teller()
 
 
-#Butler gets info
-for p in g.getplayers():
-    if p.role == Role.BUTLER:
-        choice = p.choose_players_for_ability(g,1)
-        choice.tokens.append(ReminderToken.BUTLER_MASTER)
-        #They CAN CHOOSE THEMSELVES! TODO fix.
 
+
+
+# other nights
 
 g.printgameinfo()
