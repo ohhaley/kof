@@ -322,7 +322,7 @@ def washerwoman():
             possible_pings.remove(p)
             # remove the drunk from the possible pings
             for ping in possible_pings:
-                if ReminderToken.DRUNK_IS_THE_DRUNK in ping.tokes:
+                if ReminderToken.DRUNK_IS_THE_DRUNK in ping.tokens:
                     possible_pings.remove(ping)
             real_person = random.sample(possible_pings,1)[0]
             possible_pings.remove(real_person)
@@ -449,6 +449,13 @@ def fortune_teller():
                 p.tell("Neither seat" + str(ft_choices[0].seat) + "or seat" + str(ft_choices[1].seat) + "is the demon")
 fortune_teller()
 
+def butler():
+    #Butler gets info
+    for p in g.getplayers():
+        if p.role == Role.BUTLER:
+            choice = p.choose_players_for_ability(g,1)
+            choice.tokens.append(ReminderToken.BUTLER_MASTER)
+            #They CAN CHOOSE THEMSELVES! TODO fix.
 
 
 
