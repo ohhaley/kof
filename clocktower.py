@@ -424,7 +424,7 @@ def empath(g):
                     evil_empath_neighbors += 1
     for p in g.getplayers():
         if p.role == Role.EMPATH:
-            p.tell(str(evil_empath_neighbors) + "of seats" + str(empath_neighbor_seats[0]) + "and" + str(empath_neighbor_seats[1]) + "are evil")
+            p.tell(str(evil_empath_neighbors) + " of seats " + str(empath_neighbor_seats[0]) + " and " + str(empath_neighbor_seats[1]) + " are evil")
 empath(g)
                 
 
@@ -450,7 +450,7 @@ def fortune_teller(g):
                 p.tell("Neither seat" + str(ft_choices[0].seat) + "or seat" + str(ft_choices[1].seat) + "is the demon")
 fortune_teller(g)
 
-def butler():
+def butler(g):
     #Butler gets info
     for p in g.getplayers():
         if p.role == Role.BUTLER:
@@ -470,7 +470,7 @@ for p in g.getplayers():
 
 # monk selects a player to protect
 def monk(g):
-    for p in g.getplayers:
+    for p in g.getplayers():
         if p.role == Role.MONK and p.alive:
             p.tell("Pick one player for your ability")
             choice = p.choose_players_for_ability(g, 1)
@@ -483,7 +483,7 @@ monk(g)
 
 # tell scarlet woman they become the demon, if they do
 def scarlet_woman(g):
-    for p in g.getplayers:
+    for p in g.getplayers():
         if p.role == Role.SCARLET_WOMAN and ReminderToken.MINION_IS_THE_DEMON in p.tokens:
             p.tell("You are the " + Role.IMP.name)
             p.tell("You are a " + role_to_character_type[Role.IMP].name)
@@ -491,16 +491,49 @@ def scarlet_woman(g):
             p.tokens.remove(ReminderToken.MINION_IS_THE_DEMON)
 scarlet_woman(g)
 
-# imp next
+# imp goes
 def imp(g):
-    for p in g.getplayers:
+    for p in g.getplayers():
         if p.role == Role.IMP:
             p.tell("Pick one player for your ability")
-            choice = p.choose_players_for_ability
+            choice = p.choose_players_for_ability(g, 1)
             if ReminderToken.POISONER_IS_POISONED not in p.tokens and ReminderToken.MONK_SAFE_TONIGHT not in choice[0].tokens:
                 choice[0].tokens.append(ReminderToken.IMP_WILL_DIE_TONIGHT)
+imp(g)
+
+# ravenkeeper goes
+def ravenkeeper(g):
+    for p in g.getplayers():
+        if p.role == Role.RAVENKEEPER and ReminderToken.RAVENKEEPER_DIED_TONIGHT in p.tokens:
+            p.tell("Pick one player for your ability.")
+            choice = p.choose_players_for_ability(g, 1)
+            choice_seat = choice[0].seat
+            choice_character = choice[0].role
+            p.tell(f"Seat {choice_seat} is {choice_character}.")
+
+ravenkeeper()
 
 
+# undertaker goes
+def undertaker(g):
+    for p in g.getplayers():
+        if p.role == Role.UNDERTAKER and p.alive:
+            for pl in g.getplayers():
+                if ReminderToken.UNDERTAKER_EXECUTED_TODAY in pl.tokens:
+                    executed_role = pl.role
+                    executed_seat = pl.seat
+                    p.tell(f"Seat {executed_seat} is {executed_role}.")
+undertaker(g)
 
+# empath goes if alive
+for p in g.getplayers():
+    if p.role == Role.EMPATH and p.alive:
+        empath(g)
+
+
+# butler goes if alive
+for p in g.getplayers():
+    if p.role == Role.BUTLER and p.alive:
+        butler(g)
 
 g.printgameinfo()
