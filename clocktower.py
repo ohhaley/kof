@@ -397,27 +397,31 @@ chef(g)
 
 #Empath gets info
 def empath(g):
+    player_list = g.getplayers()
+    for p in player_list:
+        if not p.alive:
+            player_list.remove(p)
     evil_empath_neighbors = 0
     empath_neighbor_seats = []
     for i in range(len(player_list)):
         if player_list[i].role == Role.EMPATH:
             if i == len(player_list) - 1:
-                empath_neighbor_seats.append(0)
-                empath_neighbor_seats.append(i-1)
+                empath_neighbor_seats.append(player_list[0].seat)
+                empath_neighbor_seats.append(player_list[i-1].seat)
                 if player_list[0].alignment == Alignment.EVIL:
                     evil_empath_neighbors += 1
                 if player_list[i-1].alignment == Alignment.EVIL:
                     evil_empath_neighbors += 1
             elif i == 0:
-                empath_neighbor_seats.append(i+1)
-                empath_neighbor_seats.append(len(player_list)-1)
+                empath_neighbor_seats.append(player_list[i+1].seat)
+                empath_neighbor_seats.append(player_list[len(player_list)-1].seat)
                 if player_list[i+1].alignment == Alignment.EVIL:
                     evil_empath_neighbors += 1
                 if player_list[len(player_list)-1].alignment == Alignment.EVIL:
                     evil_empath_neighbors += 1
             else:
-                empath_neighbor_seats.append(i+1)
-                empath_neighbor_seats.append(i-1)
+                empath_neighbor_seats.append(player_list[i+1].seat)
+                empath_neighbor_seats.append(player_list[i-1].seat)
                 if player_list[i+1].alignment == Alignment.EVIL:
                     evil_empath_neighbors += 1
                 if player_list[i-1].alignment == Alignment.EVIL:
@@ -511,7 +515,7 @@ def ravenkeeper(g):
             choice_character = choice[0].role
             p.tell(f"Seat {choice_seat} is {choice_character}.")
 
-ravenkeeper()
+ravenkeeper(g)
 
 
 # undertaker goes
