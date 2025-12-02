@@ -15,6 +15,7 @@ class Game:
     
     #Prints all the info there is about each player -- for debugging
     def printgameinfo(self):
+        print("Days: ",self.num_days,"Game phase: ",self.game_phase)
         for role in self.players:
             for p in self.players[role]:
                 print(p.role,p.alignment,p.alive,p.canvote,p.badinfo,p.seat,p.tokens,p.history)
@@ -26,6 +27,21 @@ class Game:
             for p in self.players[type]: all_players.append(p)
         all_players = sorted(all_players, key=lambda player: player.seat)
         return all_players
+    
+    def incrementtime(self):
+        #print("It is currently "+self.game_phase.name+ ". Time to change that!")
+        if self.game_phase == GamePhase.NIGHT:
+            self.game_phase = GamePhase.DAY
+            for player in self.getplayers(): player.tell("It is now DAY")
+        elif self.game_phase == GamePhase.DAY:
+            self.game_phase = GamePhase.EVENING
+            for player in self.getplayers(): player.tell("It is now EVENING")
+        elif self.game_phase == GamePhase.EVENING:
+            self.num_days = self.num_days+1
+            self.game_phase = GamePhase.NIGHT
+            for player in self.getplayers():
+                player.tell("It is now Round "+str(self.num_days))
+                player.tell("It is now NIGHT")
 
 
 #Class representing a player
@@ -185,8 +201,8 @@ for type in num_players_to_num_roles[num_players]:
     for role in Role:
         if role_to_character_type[role] == type: roles_of_this_type.append(role)
     random_roles = random.sample(roles_of_this_type,num_players_to_num_roles[num_players][type])
-    if type == CharacterType.TOWNSFOLK: random_roles = [Role.WASHERWOMAN, Role.LIBRARIAN, Role.INVESTIGATOR, Role.MAYOR, Role.MONK]
-    if type == CharacterType.MINION: random_roles = [Role.BARON]
+    #if type == CharacterType.TOWNSFOLK: random_roles = [Role.WASHERWOMAN, Role.LIBRARIAN, Role.INVESTIGATOR, Role.MAYOR, Role.MONK]
+    #if type == CharacterType.MINION: random_roles = [Role.BARON]
     for role in random_roles:
         players[role_to_character_type[role]].append(Player(role,character_type_to_alignment[role_to_character_type[role]],True,True,False,seats[seat],[],[]))
         seat = seat + 1
@@ -274,21 +290,20 @@ bluffs = random.sample(all_roles,3)
 
 
 #make the Game object
-g = Game(players,0,GamePhase.NIGHT,bluffs)
+g = Game(players,0,GamePhase.EVENING,bluffs)
 
 #Players need to know what their role is
 for type in g.players:
     for p in g.players[type]:
-        p.tell("You are the "+p.role.name)
-        p.tell("You are a "+role_to_character_type[p.role].name)
-        p.tell("You are a "+character_type_to_alignment[role_to_character_type[p.role]].name)
+        p.tell("Your role is "+p.role.name)
+        p.tell("Your type is "+role_to_character_type[p.role].name)
+        p.tell("Your alignment is "+character_type_to_alignment[role_to_character_type[p.role]].name)
 
-
-
+g.incrementtime()
 #Do first night
 
 #The Drunk
-#TODO: MAKE THIS WORK
+#TODO: Does the Drunk work?
 
 player_list = g.getplayers()
 
@@ -432,9 +447,6 @@ def empath(g):
 empath(g)
                 
 
-
-
-
 # randomly assign fortune teller red herring to a good player
 def red_herring(g):
     good_players = [player for player in g.getplayers() if player.alignment == Alignment.GOOD]
@@ -458,18 +470,23 @@ def butler(g):
     #Butler gets info
     for p in g.getplayers():
         if p.role == Role.BUTLER:
-            choice = p.choose_players_for_ability(g,1)
+            choice = p.choose_players_for_ability(g,1)[0]
             choice.tokens.append(ReminderToken.BUTLER_MASTER)
             #They CAN CHOOSE THEMSELVES! TODO fix.
 
 
+g.incrementtime()
+#TODO: daytime happens
+g.incrementtime()
+#TODO: evening happens
 
 
+g.incrementtime()
 # other nights
 # poisoner goes first if alive
 for p in g.getplayers():
     if p.role == Role.POISONER and p.alive:
-        poisoner()
+        poisoner(g)
 
 
 # monk selects a player to protect
