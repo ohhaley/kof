@@ -273,8 +273,7 @@ for i in range(len(outsiders)):
         players[CharacterType.TOWNSFOLK][random_player].badinfo = True
         players[CharacterType.TOWNSFOLK][random_player].tokens.append(ReminderToken.DRUNK_IS_THE_DRUNK)
         
-        # add drunk to all_roles
-        all_roles.append(Role.DRUNK)
+       
         # remove the added townsfolk from all_roles
         for role in all_roles:
             if role == new_townsfolk: all_roles.remove(role)
@@ -329,6 +328,16 @@ def poisoner(g):
             choice[0].tokens.append(ReminderToken.POISONER_IS_POISONED)
             if choice[0].badinfo == False: choice[0].badinfo = True
 poisoner(g)
+
+# spy sees grim
+def spy(g):
+    players = g.getplayers()
+    for p in players:
+        if p.role == Role.SPY:
+            for player in players:
+                p.tell(f"Seat {player.seat} is {player.role.name}")
+                for token in player.tokens:
+                    p.tell(f"Seat {player.seat} has the {token} token") 
 
 #Washerwoman gets info
 def washerwoman(g):
@@ -447,12 +456,14 @@ def empath(g):
 empath(g)
                 
 
-# randomly assign fortune teller red herring to a good player
+# randomly assign fortune teller red herring to a good player if there is a non-drunk ft in play
 def red_herring(g):
     good_players = [player for player in g.getplayers() if player.alignment == Alignment.GOOD]
     red_herring = random.choice(good_players)
     red_herring.tokens.append(ReminderToken.FORTUNE_TELLER_RED_HERRING)
-red_herring(g)
+for p in g.getplayers():
+    if p.role == Role.FORTUNE_TELLER and ReminderToken.DRUNK_IS_THE_DRUNK not in p.tokens:
+        red_herring(g)
 
 #Fortune teller gets info
 def fortune_teller(g):
@@ -499,7 +510,10 @@ def monk(g):
                 choice[0].tokens.append(ReminderToken.MONK_SAFE_TONIGHT)
 monk(g)
 
-# spy goes next
+# spy sees grim
+for p in g.getplayers():
+    if p.role == Role.SPY and p.alive:
+        spy(g)
 
 
 # tell scarlet woman they become the demon, if they do
@@ -518,8 +532,10 @@ def imp(g):
         if p.role == Role.IMP:
             p.tell("Pick one player for your ability")
             choice = p.choose_players_for_ability(g, 1)
-            if ReminderToken.POISONER_IS_POISONED not in p.tokens and ReminderToken.MONK_SAFE_TONIGHT not in choice[0].tokens:
-                choice[0].tokens.append(ReminderToken.IMP_WILL_DIE_TONIGHT)
+            if ReminderToken.POISONER_IS_POISONED not in p.tokens:
+                if ReminderToken.MONK_SAFE_TONIGHT not in choice[0].tokens:
+                    if ReminderToken.SOLDIER_SAFE not in choice[0].tokens or ReminderToken.POISONER_IS_POISONED in choice[0].tokens:
+                        choice[0].tokens.append(ReminderToken.IMP_WILL_DIE_TONIGHT)
 imp(g)
 
 # ravenkeeper goes
@@ -550,6 +566,12 @@ undertaker(g)
 for p in g.getplayers():
     if p.role == Role.EMPATH and p.alive:
         empath(g)
+
+
+# FT goes if alive
+for p in g.getplayers():
+    if p.role == Role.FORTUNE_TELLER and p.alive:
+        fortune_teller(g)
 
 
 # butler goes if alive
