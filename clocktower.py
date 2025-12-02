@@ -560,6 +560,7 @@ def undertaker(g):
                     executed_role = pl.role
                     executed_seat = pl.seat
                     p.tell(f"Seat {executed_seat} is {executed_role}.")
+                    pl.tokens.remove(ReminderToken.UNDERTAKER_EXECUTED_TODAY)
 undertaker(g)
 
 # empath goes if alive
