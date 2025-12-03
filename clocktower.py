@@ -319,6 +319,7 @@ def do_day(g, num_conversations):
     if dead_player:
         for p in players:
             p.tell(f"Seat {dead_player.seat} died in the night.")
+        dead_player.tokens.remove(ReminderToken.IMP_WILL_DIE_TONIGHT)
     else:
         for p in players:
             p.tell("Nobody died in the night")
@@ -685,15 +686,10 @@ def butler(g):
             #They CAN CHOOSE THEMSELVES! TODO fix.
 
 
-start_game(g)
 
 
-# other nights
-g.incrementtime()
-# poisoner goes first if alive
-for p in g.getplayers():
-    if p.role == Role.POISONER and p.alive:
-        poisoner(g)
+
+
 
 
 # monk selects a player to protect
@@ -758,7 +754,7 @@ def undertaker(g):
 
 
 
-
+start_game(g)
 
 
 
