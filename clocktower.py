@@ -75,6 +75,10 @@ class Player:
         choice = random.choice(possible_choices)
         #TODO: prompt llm for what to say to that player
 
+    def say_publicly(self):
+        return "Hi!"
+        #TODO
+
 
 class GamePhase(Enum):
     NIGHT = 1
@@ -300,6 +304,56 @@ bluffs = random.sample(all_roles,3)
 g = Game(players,0,GamePhase.EVENING,bluffs)
 
 
+def start_game(g):
+    #Players need to know what their role is
+    for type in g.players:
+        for p in g.players[type]:
+            p.tell("Your role is "+p.role.name)
+            p.tell("Your type is "+role_to_character_type[p.role].name)
+            p.tell("Your alignment is "+character_type_to_alignment[role_to_character_type[p.role]].name)
+
+    g.incrementtime()
+    #Do first night
+
+    #The Drunk
+    #TODO: Does the Drunk work?
+
+   
+    # decide red herring if ft in play
+    for p in g.getplayers():
+        if p.role == Role.FORTUNE_TELLER and ReminderToken.DRUNK_IS_THE_DRUNK not in p.tokens:
+            red_herring(g)
+
+    #Minion info
+    for p in g.players[CharacterType.MINION]:
+        p.tell("Seat "+str(g.demon().seat)+" is the Demon")
+
+    #Demon info
+    for p in g.players[CharacterType.DEMON]:
+        for q in g.players[CharacterType.MINION]:
+            p.tell("Seat "+str(q.seat)+" is a Minion")
+        for bluff in g.bluffs:
+            p.tell(bluff.name+" is not in play")
+
+
+    # first night abilities
+    # minions
+    poisoner(g)
+    spy(g)
+
+    #townsfolk 
+    washerwoman(g)
+    librarian(g)
+    investigator(g)
+    chef(g)
+    empath(g)
+    fortune_teller(g)
+    butler(g)
+
+    g.incrementtime()
+    #TODO: daytime happens
+    g.incrementtime()
+    #TODO: evening happens
 
 
     
@@ -471,11 +525,11 @@ def butler(g):
             #They CAN CHOOSE THEMSELVES! TODO fix.
 
 
+start_game(g)
 
 
-
-g.incrementtime()
 # other nights
+g.incrementtime()
 # poisoner goes first if alive
 for p in g.getplayers():
     if p.role == Role.POISONER and p.alive:
@@ -565,58 +619,20 @@ for p in g.getplayers():
 
 
 
-def start_game(g):
-    #Players need to know what their role is
-    for type in g.players:
-        for p in g.players[type]:
-            p.tell("Your role is "+p.role.name)
-            p.tell("Your type is "+role_to_character_type[p.role].name)
-            p.tell("Your alignment is "+character_type_to_alignment[role_to_character_type[p.role]].name)
 
-    g.incrementtime()
-    #Do first night
-
-    #The Drunk
-    #TODO: Does the Drunk work?
-
-   
-    # decide red herring if ft in play
-    for p in g.getplayers():
-        if p.role == Role.FORTUNE_TELLER and ReminderToken.DRUNK_IS_THE_DRUNK not in p.tokens:
-            red_herring(g)
-
-    #Minion info
-    for p in g.players[CharacterType.MINION]:
-        p.tell("Seat "+str(g.demon().seat)+" is the Demon")
-
-    #Demon info
-    for p in g.players[CharacterType.DEMON]:
-        for q in g.players[CharacterType.MINION]:
-            p.tell("Seat "+str(q.seat)+" is a Minion")
-        for bluff in g.bluffs:
-            p.tell(bluff.name+" is not in play")
-
-
-    # first night abilities
-    # minions
-    poisoner(g)
-    spy(g)
-
-    #townsfolk 
-    washerwoman(g)
-    librarian(g)
-    investigator(g)
-    chef(g)
-    empath(g)
-    fortune_teller(g)
-    butler(g)
-
-    g.incrementtime()
-    #TODO: daytime happens
-    g.incrementtime()
-    #TODO: evening happens
 
     
+def do_evening(g):
+    #public discussion
+    num_speech_turns = 2
+    players = g.getplayers()
+    random.shuffle(players)
+    for i in range(0,num_speech_turns):
+        print("Public discussion!")
+        for p in players:
+            msg = p.say_publicly()
+            for q in players: q.tell(msg)
+
 
 
 
