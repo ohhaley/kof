@@ -73,7 +73,7 @@ class Player:
         players = g.getplayers()
         possible_choices = [player for player in players if player.seat != self.seat]
         choice = random.choice(possible_choices)
-        #TODO: prompt llm for what to say to that player
+        return choice
 
     def say_publicly(self):
         msg = "Seat "+str(self.seat)+" says publicly: Hi! I am the "+self.role.name
@@ -367,10 +367,17 @@ def start_game(g):
     fortune_teller(g)
     butler(g)
 
+    alive_players = g.getplayers()
+    game_over = False
+
     g.incrementtime()
-    #TODO: daytime happens
-    g.incrementtime()
-    do_evening(g)
+    while not game_over:
+        #daytime happens
+        do_day(g, 3)
+        g.incrementtime()
+        # do evening
+        do_evening(g)
+        
 
 
     
@@ -634,7 +641,12 @@ for p in g.getplayers():
         butler(g)
 
 
-
+def do_day(g, num_conversations):
+    for i in range(num_conversations):
+        for p in g.getplayers():
+            p.tell("Choose a player to talk to")
+            choice = p.choose_player_to_talk_to(g)
+            #TODO: say something to specific player
 
 
 
