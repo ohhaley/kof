@@ -81,6 +81,10 @@ class Player:
         else: return ""
         #TODO
 
+    def say_privately(self, player_to_tell):
+        msg = f"Seat {self.seat} tells you: Hi! I am the {self.role.name}"
+        return msg
+
 
 class GamePhase(Enum):
     NIGHT = 1
@@ -305,6 +309,33 @@ bluffs = random.sample(all_roles,3)
 #make the Game object
 g = Game(players,0,GamePhase.EVENING,bluffs)
 
+def do_day(g, num_conversations):
+    players = g.getplayers()
+    # tell everyone who died in the night
+    dead_player = None
+    for p in players:
+        if ReminderToken.IMP_WILL_DIE_TONIGHT in p.tokens: 
+            dead_player = p
+    if dead_player:
+        for p in players:
+            p.tell(f"Seat {dead_player.seat} died in the night.")
+    else:
+        for p in players:
+            p.tell("Nobody died in the night")
+    
+    # start private discussion
+    for p in players:
+        p.tell("Private discussion starts")
+    for i in range(num_conversations):
+        for p in g.getplayers():
+            p.tell("Choose a player to talk to")
+            choice = p.choose_player_to_talk_to(g)
+            msg = p.say_privately(choice)
+            choice.tell(msg)
+            
+
+
+
 def do_evening(g):
     #public discussion
     num_speech_turns = 2
@@ -321,7 +352,7 @@ def do_evening(g):
     #noms
 
 
-def start_game(g):
+def first_night(g):
     #Players need to know what their role is
     for type in g.players:
         for p in g.players[type]:
@@ -367,17 +398,122 @@ def start_game(g):
     fortune_teller(g)
     butler(g)
 
+
+def other_nights(g):
+    players = g.getplayers()
+    # poisoner goes first 
+    for p in players:
+        if p.role == Role.POISONER and p.alive:
+            poisoner(g)
+    
+    # monk goes
+    for p in players:
+        if p.role == Role.MONK and p.alive:
+            monk(g)
+    
+    # spy goes
+    for p in players:
+        if p.role == Role.SPY and p.alive:
+            spy(g)
+
+    # scarlet woman goes
+    for p in players:
+        if p.role == Role.SCARLET_WOMAN and p.alive:
+            scarlet_woman(g)
+    
+    # imp goes
+    for p in players:
+        if p.role == Role.IMP and role.alive:
+            imp(g)
+    
+    # ravenkeeper goes
+    for p in players:
+        if p.role == Role.RAVENKEEPER:
+            ravenkeeper(g)
+
+    # undertaker goes
+    for p in players:
+        if p.role == Role.UNDERTAKER and p.alive:
+            undertaker(g)
+    
+    # empath goes
+    for p in players:
+        if p.role == Role.EMPATH and p.alive:
+            empath(g)
+    
+    # fortune teller goes
+    for p in players:
+        if p.role == Role.FORTUNE_TELLER and p.alive:
+            fortune_teller(g)
+    
+    # butler goes 
+    for p in players:
+        if p.role == Role.BUTLER and p.alive:
+            butler(g)
+
+
+def start_game(g):
     alive_players = g.getplayers()
     game_over = False
 
+    # do the first night
+    first_night(g)
+
+
     g.incrementtime()
+    # loop for rest of the game
     while not game_over:
-        #daytime happens
+        #daytime happens, each player can tell something to three other players
         do_day(g, 3)
         g.incrementtime()
         # do evening
         do_evening(g)
+        # update alive players list
+        for player in alive_players:
+            if not player.alive:
+                alive_players.remove(player)
+
+        # check if there is no alive imp, if so, stop game loop
+        for player in alive_players:
+            if player.role == Role.IMP and p.alive:
+                game_over = False
+                break
+            if player.role == Role.IMP and p.dead:
+                game_over = True
+        if game_over:
+            break
         
+        # if less than three alive players, stop game loop
+        if len(alive_players) < 3:
+            # game is over
+            break
+        
+        g.incrementtime()
+        # do next night
+        other_nights(g)
+        # update alive players list
+        for player in alive_players:
+            if not player.alive:
+                alive_players.remove(player)
+        
+        # check if there is no alive imp, if so, stop game loop
+        for player in alive_players:
+            if player.role == Role.IMP and p.alive:
+                game_over = False
+                break
+            if player.role == Role.IMP and p.dead:
+                game_over = True
+        if game_over:
+            break
+        
+        # if there are less than three alive players, stop game loop
+        if len(alive_players) < 3:
+            # game is over
+            break
+
+        g.incrementtime()
+        
+
 
 
     
@@ -568,12 +704,9 @@ def monk(g):
             choice = p.choose_players_for_ability(g, 1)
             if ReminderToken.DRUNK_IS_THE_DRUNK not in p.tokens and ReminderToken.POISONER_IS_POISONED not in p.tokens:
                 choice[0].tokens.append(ReminderToken.MONK_SAFE_TONIGHT)
-monk(g)
 
-# spy sees grim
-for p in g.getplayers():
-    if p.role == Role.SPY and p.alive:
-        spy(g)
+
+
 
 
 # tell scarlet woman they become the demon, if they do
@@ -584,7 +717,7 @@ def scarlet_woman(g):
             p.tell("You are a " + role_to_character_type[Role.IMP].name)
             p.tell("You are " + character_type_to_alignment[CharacterType.DEMON].name)
             p.tokens.remove(ReminderToken.MINION_IS_THE_DEMON)
-scarlet_woman(g)
+
 
 # imp goes
 def imp(g):
@@ -596,7 +729,8 @@ def imp(g):
                 if ReminderToken.MONK_SAFE_TONIGHT not in choice[0].tokens:
                     if ReminderToken.SOLDIER_SAFE not in choice[0].tokens or ReminderToken.POISONER_IS_POISONED in choice[0].tokens:
                         choice[0].tokens.append(ReminderToken.IMP_WILL_DIE_TONIGHT)
-imp(g)
+                        choice.alive = False
+
 
 # ravenkeeper goes
 def ravenkeeper(g):
@@ -608,7 +742,7 @@ def ravenkeeper(g):
             choice_character = choice[0].role
             p.tell(f"Seat {choice_seat} is {choice_character}.")
 
-ravenkeeper(g)
+
 
 
 # undertaker goes
@@ -621,32 +755,12 @@ def undertaker(g):
                     executed_seat = pl.seat
                     p.tell(f"Seat {executed_seat} is {executed_role}.")
                     pl.tokens.remove(ReminderToken.UNDERTAKER_EXECUTED_TODAY)
-undertaker(g)
-
-# empath goes if alive
-for p in g.getplayers():
-    if p.role == Role.EMPATH and p.alive:
-        empath(g)
 
 
-# FT goes if alive
-for p in g.getplayers():
-    if p.role == Role.FORTUNE_TELLER and p.alive:
-        fortune_teller(g)
 
 
-# butler goes if alive
-for p in g.getplayers():
-    if p.role == Role.BUTLER and p.alive:
-        butler(g)
 
 
-def do_day(g, num_conversations):
-    for i in range(num_conversations):
-        for p in g.getplayers():
-            p.tell("Choose a player to talk to")
-            choice = p.choose_player_to_talk_to(g)
-            #TODO: say something to specific player
 
 
 
