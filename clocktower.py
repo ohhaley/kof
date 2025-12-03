@@ -390,6 +390,7 @@ def investigator(g):
 
 #Chef gets info
 def chef(g):
+    player_list = g.getplayers()
     evil_pairs = 0
     for i in range(len(player_list)):
         if i != len(player_list) - 1:
