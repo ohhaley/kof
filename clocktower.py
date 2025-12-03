@@ -67,6 +67,14 @@ class Player:
         for choice in choices:
             self.tell("I chose Seat "+str(choice.seat)+" for my ability")
         return choices
+    
+    # function to allow player to choose a player to talk to
+    def choose_player_to_talk_to(self, g):
+        players = g.getplayers()
+        possible_choices = [player for player in players if player.seat != self.seat]
+        choice = random.choice(possible_choices)
+        #TODO: prompt llm for what to say to that player
+
 
 class GamePhase(Enum):
     NIGHT = 1
@@ -291,31 +299,9 @@ bluffs = random.sample(all_roles,3)
 #make the Game object
 g = Game(players,0,GamePhase.EVENING,bluffs)
 
-#Players need to know what their role is
-for type in g.players:
-    for p in g.players[type]:
-        p.tell("Your role is "+p.role.name)
-        p.tell("Your type is "+role_to_character_type[p.role].name)
-        p.tell("Your alignment is "+character_type_to_alignment[role_to_character_type[p.role]].name)
 
-g.incrementtime()
-#Do first night
 
-#The Drunk
-#TODO: Does the Drunk work?
 
-player_list = g.getplayers()
-
-#Minion info
-for p in g.players[CharacterType.MINION]:
-    p.tell("Seat "+str(g.demon().seat)+" is the Demon")
-
-#Demon info
-for p in g.players[CharacterType.DEMON]:
-    for q in g.players[CharacterType.MINION]:
-        p.tell("Seat "+str(q.seat)+" is a Minion")
-    for bluff in g.bluffs:
-        p.tell(bluff.name+" is not in play")
     
 #Poisoner poisons someone
 def poisoner(g):
@@ -327,7 +313,7 @@ def poisoner(g):
             choice = p.choose_players_for_ability(g,1)
             choice[0].tokens.append(ReminderToken.POISONER_IS_POISONED)
             if choice[0].badinfo == False: choice[0].badinfo = True
-poisoner(g)
+
 
 # spy sees grim
 def spy(g):
@@ -358,7 +344,7 @@ def washerwoman(g):
             pings = [real_person,fake_person]
             random.shuffle(pings)
             p.tell("From your ability you learn either Seat "+str(pings[0].seat)+" or Seat "+str(pings[1].seat)+" is the "+real_person.role.name)
-washerwoman(g)
+
 
 #Librarian gets info
 def librarian(g):
@@ -383,7 +369,7 @@ def librarian(g):
                 outsider_to_learn = Role.DRUNK.name if ReminderToken.DRUNK_IS_THE_DRUNK in real_person.tokens else real_person.role.name
                 random.shuffle(pings)
                 p.tell("From your ability you learn either Seat "+str(pings[0].seat)+" or Seat "+str(pings[1].seat)+" is the "+ outsider_to_learn)
-librarian(g)
+
 
 #Investigator gets info
 def investigator(g):
@@ -400,7 +386,7 @@ def investigator(g):
             pings = [real_person,fake_person]
             random.shuffle(pings)
             p.tell("From your ability you learn either Seat "+str(pings[0].seat)+" or Seat "+str(pings[1].seat)+" is the "+real_person.role.name)
-investigator(g)
+
 
 #Chef gets info
 def chef(g):
@@ -416,7 +402,7 @@ def chef(g):
     for p in g.getplayers():
         if p.role == Role.CHEF:
             p.tell("There are " + str(evil_pairs) + "pairs of evil players")
-chef(g)
+
 
 
 #Empath gets info
@@ -453,7 +439,7 @@ def empath(g):
     for p in g.getplayers():
         if p.role == Role.EMPATH:
             p.tell(str(evil_empath_neighbors) + " of seats " + str(empath_neighbor_seats[0]) + " and " + str(empath_neighbor_seats[1]) + " are evil")
-empath(g)
+
                 
 
 # randomly assign fortune teller red herring to a good player if there is a non-drunk ft in play
@@ -461,9 +447,7 @@ def red_herring(g):
     good_players = [player for player in g.getplayers() if player.alignment == Alignment.GOOD]
     red_herring = random.choice(good_players)
     red_herring.tokens.append(ReminderToken.FORTUNE_TELLER_RED_HERRING)
-for p in g.getplayers():
-    if p.role == Role.FORTUNE_TELLER and ReminderToken.DRUNK_IS_THE_DRUNK not in p.tokens:
-        red_herring(g)
+
 
 #Fortune teller gets info
 def fortune_teller(g):
@@ -475,7 +459,7 @@ def fortune_teller(g):
                 p.tell("One of seat" + str(ft_choices[0].seat) + "or seat" + str(ft_choices[1].seat) + "is the demon")
             else:
                 p.tell("Neither seat" + str(ft_choices[0].seat) + "or seat" + str(ft_choices[1].seat) + "is the demon")
-fortune_teller(g)
+
 
 def butler(g):
     #Butler gets info
@@ -486,10 +470,7 @@ def butler(g):
             #They CAN CHOOSE THEMSELVES! TODO fix.
 
 
-g.incrementtime()
-#TODO: daytime happens
-g.incrementtime()
-#TODO: evening happens
+
 
 
 g.incrementtime()
@@ -579,5 +560,65 @@ for p in g.getplayers():
 for p in g.getplayers():
     if p.role == Role.BUTLER and p.alive:
         butler(g)
+
+
+
+
+def start_game(g):
+    #Players need to know what their role is
+    for type in g.players:
+        for p in g.players[type]:
+            p.tell("Your role is "+p.role.name)
+            p.tell("Your type is "+role_to_character_type[p.role].name)
+            p.tell("Your alignment is "+character_type_to_alignment[role_to_character_type[p.role]].name)
+
+    g.incrementtime()
+    #Do first night
+
+    #The Drunk
+    #TODO: Does the Drunk work?
+
+   
+    # decide red herring if ft in play
+    for p in g.getplayers():
+        if p.role == Role.FORTUNE_TELLER and ReminderToken.DRUNK_IS_THE_DRUNK not in p.tokens:
+            red_herring(g)
+
+    #Minion info
+    for p in g.players[CharacterType.MINION]:
+        p.tell("Seat "+str(g.demon().seat)+" is the Demon")
+
+    #Demon info
+    for p in g.players[CharacterType.DEMON]:
+        for q in g.players[CharacterType.MINION]:
+            p.tell("Seat "+str(q.seat)+" is a Minion")
+        for bluff in g.bluffs:
+            p.tell(bluff.name+" is not in play")
+
+
+    # first night abilities
+    # minions
+    poisoner(g)
+    spy(g)
+
+    #townsfolk 
+    washerwoman(g)
+    librarian(g)
+    investigator(g)
+    chef(g)
+    empath(g)
+    fortune_teller(g)
+    butler(g)
+
+    g.incrementtime()
+    #TODO: daytime happens
+    g.incrementtime()
+    #TODO: evening happens
+
+    
+
+
+
+    
 
 g.printgameinfo()
