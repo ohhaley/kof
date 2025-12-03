@@ -18,7 +18,7 @@ class Game:
         print("Days: ",self.num_days,"Game phase: ",self.game_phase)
         for role in self.players:
             for p in self.players[role]:
-                print(p.role,p.alignment,p.alive,p.canvote,p.badinfo,p.seat,p.tokens,p.history)
+                print(p.role,p.alignment,p.alive,p.canvote,p.badinfo,p.seat,p.tokens,p.history,"\n")
 
     #Get a list of all players -- helpful since Game.players is a dict
     def getplayers(self):
@@ -76,7 +76,9 @@ class Player:
         #TODO: prompt llm for what to say to that player
 
     def say_publicly(self):
-        return "Hi!"
+        msg = "Seat "+str(self.seat)+" says publicly: Hi! I am the "+self.role.name
+        if random.random()<0.2: return msg
+        else: return ""
         #TODO
 
 
@@ -303,6 +305,21 @@ bluffs = random.sample(all_roles,3)
 #make the Game object
 g = Game(players,0,GamePhase.EVENING,bluffs)
 
+def do_evening(g):
+    #public discussion
+    num_speech_turns = 2
+    players = g.getplayers()
+    random.shuffle(players)
+    for p in players:
+        p.tell("Public discussion starts")
+    for i in range(0,num_speech_turns):
+        for p in players:
+            msg = p.say_publicly()
+            if msg!="":
+                for q in players: q.tell(msg)
+    
+    #noms
+
 
 def start_game(g):
     #Players need to know what their role is
@@ -353,7 +370,7 @@ def start_game(g):
     g.incrementtime()
     #TODO: daytime happens
     g.incrementtime()
-    #TODO: evening happens
+    do_evening(g)
 
 
     
@@ -621,17 +638,6 @@ for p in g.getplayers():
 
 
 
-    
-def do_evening(g):
-    #public discussion
-    num_speech_turns = 2
-    players = g.getplayers()
-    random.shuffle(players)
-    for i in range(0,num_speech_turns):
-        print("Public discussion!")
-        for p in players:
-            msg = p.say_publicly()
-            for q in players: q.tell(msg)
 
 
 
