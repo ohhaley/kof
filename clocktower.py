@@ -84,6 +84,24 @@ class Player:
     def say_privately(self, player_to_tell):
         msg = f"Seat {self.seat} tells you: Hi! I am the {self.role.name}"
         return msg
+    
+    def nominate_someone_or_not(self,can_be_nominated):
+        #maybe you don't want to nom
+        if random.random() > 0.5:
+            self.tell("I did not nominate anyone")
+            return None
+        choice = random.choice(can_be_nominated)
+        self.tell("I nominated Seat "+str(choice.seat))
+        return choice
+    
+    def getvote(self,nominee):
+        if random.random() > 0.5:
+            #vote
+            self.tell("I voted for Seat "+str(nominee.seat))
+            return True
+        else:
+            #no vote
+            self.tell("I did not vote")
 
 
 class GamePhase(Enum):
@@ -348,9 +366,56 @@ def do_evening(g):
         for p in players:
             msg = p.say_publicly()
             if msg!="":
-                for q in players: q.tell(msg)
-    
+                for q in players: q.tell(msg)    
+
     #noms
+    can_nominate = g.getplayers()
+    for player in can_nominate:
+            if not player.alive:
+                can_nominate.remove(player) 
+    can_be_nominated = []
+    for player in can_nominate:
+        can_be_nominated.append(player)
+
+    votes_to_die = round(len(can_nominate)/2)-1
+    on_the_block = None
+    for player in can_nominate:
+        player.tell("Would you like to nominate someone? If so, who?")
+        nominee = player.nominate_someone_or_not(can_be_nominated)
+        if not nominee == None:
+            can_be_nominated.remove(nominee)
+            total_votes = 0
+            for p in g.getplayers(): #TODO sort this in circle order
+                p.tell("Seat "+str(player.seat)+" has nominated Seat "+str(nominee.seat))
+                p.tell("Total votes right now: "+str(total_votes)+", total needed: "+str(votes_to_die))
+                didvote = p.getvote(nominee)
+                if didvote:
+                    total_votes = total_votes+1
+                    for q in g.getplayers():
+                        q.tell("Total votes: "+str(total_votes)+", as Seat "+str(p.seat)+" has voted")
+            print(total_votes,votes_to_die)
+            if total_votes > votes_to_die:
+                on_the_block = nominee
+                votes_to_die = total_votes
+                for p in g.getplayers():
+                    p.tell("There were "+str(total_votes)+", with "+str(votes_to_die)+" needed")
+                    p.tell("Seat "+str(nominee.seat)+" is on the block")
+            elif total_votes == votes_to_die:
+                on_the_block = None
+                for p in g.getplayers():
+                    p.tell("There were "+str(total_votes)+", with "+str(votes_to_die)+" needed")
+                    p.tell("No one is on the block")
+
+    if not on_the_block == None:
+        print("Seat "+str(on_the_block.seat)+" was executed")
+        for p in g.getplayers(): p.tell("Seat "+str(on_the_block.seat)+" was executed and dies")
+        on_the_block.alive = False
+    else:
+        print("No one was executed")
+        for p in g.getplayers(): p.tell("No one was executed")
+                    
+
+    
 
 
 def first_night(g):
@@ -425,7 +490,7 @@ def other_nights(g):
     # imp goes
     for p in players:
         if p.role == Role.IMP and p.alive:
-            print("Imp acting on other night")
+            #print("Imp acting on other night")
             imp(g)
     
     # ravenkeeper goes
@@ -467,7 +532,7 @@ def start_game(g):
     g.incrementtime()
     # loop for rest of the game
     while not game_over:
-        print(g.num_days,g.game_phase,len(alive_players)," players")
+        print(g.num_days,g.game_phase.name,len(alive_players)," players")
         #daytime happens, each player can tell something to three other players
         do_day(g, 3)
         g.incrementtime()
@@ -793,4 +858,4 @@ start_game(g)
 
     
 
-#g.printgameinfo()
+g.printgameinfo()
