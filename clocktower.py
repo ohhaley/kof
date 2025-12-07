@@ -424,7 +424,8 @@ def other_nights(g):
     
     # imp goes
     for p in players:
-        if p.role == Role.IMP and role.alive:
+        if p.role == Role.IMP and p.alive:
+            print("Imp acting on other night")
             imp(g)
     
     # ravenkeeper goes
@@ -453,7 +454,9 @@ def other_nights(g):
             butler(g)
 
 
+#game loop
 def start_game(g):
+    print(g.printgameinfo())
     alive_players = g.getplayers()
     game_over = False
 
@@ -464,9 +467,11 @@ def start_game(g):
     g.incrementtime()
     # loop for rest of the game
     while not game_over:
+        print(g.num_days,g.game_phase,len(alive_players)," players")
         #daytime happens, each player can tell something to three other players
         do_day(g, 3)
         g.incrementtime()
+        #print(g.game_phase)
         # do evening
         do_evening(g)
         # update alive players list
@@ -474,13 +479,15 @@ def start_game(g):
             if not player.alive:
                 alive_players.remove(player)
 
+        if g.num_days > 100:
+            break
+
+        game_over = True
         # check if there is no alive imp, if so, stop game loop
         for player in alive_players:
             if player.role == Role.IMP and p.alive:
                 game_over = False
                 break
-            if player.role == Role.IMP and p.dead:
-                game_over = True
         if game_over:
             break
         
@@ -490,6 +497,7 @@ def start_game(g):
             break
         
         g.incrementtime()
+        #print(g.game_phase)
         # do next night
         other_nights(g)
         # update alive players list
@@ -497,13 +505,12 @@ def start_game(g):
             if not player.alive:
                 alive_players.remove(player)
         
+        game_over = True
         # check if there is no alive imp, if so, stop game loop
         for player in alive_players:
             if player.role == Role.IMP and p.alive:
                 game_over = False
                 break
-            if player.role == Role.IMP and p.dead:
-                game_over = True
         if game_over:
             break
         
@@ -786,4 +793,4 @@ start_game(g)
 
     
 
-g.printgameinfo()
+#g.printgameinfo()
