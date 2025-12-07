@@ -725,7 +725,9 @@ def imp(g):
                 if ReminderToken.MONK_SAFE_TONIGHT not in choice[0].tokens:
                     if ReminderToken.SOLDIER_SAFE not in choice[0].tokens or ReminderToken.POISONER_IS_POISONED in choice[0].tokens:
                         choice[0].tokens.append(ReminderToken.IMP_WILL_DIE_TONIGHT)
-                        choice.alive = False
+                        choice[0].alive = False
+                        if choice[0].seat == p.seat:
+                            star_pass(g)
 
 
 # ravenkeeper goes
@@ -751,6 +753,24 @@ def undertaker(g):
                     executed_seat = pl.seat
                     p.tell(f"Seat {executed_seat} is {executed_role}.")
                     pl.tokens.remove(ReminderToken.UNDERTAKER_EXECUTED_TODAY)
+
+
+def star_pass(g):
+    minions = []
+    for p in g.getplayers():
+        if role_to_character_type[p.role] == CharacterType.MINION and p.alive:
+            minions.append(p)
+    if minions != []:
+        for minion in minions:
+            if minion.role == Role.SCARLET_WOMAN and minion.alive:
+                minion.role = Role.IMP
+                minion.tell("You are now the Imp. You are evil.")
+                return
+        
+        minion_to_imp = random.choice(minions)
+        minion_to_imp.tell("You are now the Imp. You are evil.")
+        
+
 
 
 
