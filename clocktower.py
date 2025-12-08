@@ -910,6 +910,25 @@ def undertaker(g):
                     pl.tokens.remove(ReminderToken.UNDERTAKER_EXECUTED_TODAY)
 
 
+def slayer(g, slayer, slayed):
+    if slayer.role == Role.SLAYER and slayer.alive and ReminderToken.SLAYER_HAS_ABILITY in slayer.tokens:
+        slayer.tokens.remove(ReminderToken.SLAYER_HAS_ABILITY)
+        if ReminderToken.POISONER_IS_POISONED not in slayer.tokens and ReminderToken.DRUNK_IS_THE_DRUNK not in slayer.tokens:
+            if slayed.role == Role.IMP:
+                slayed.alive = False
+                for p in g.getplayers():
+                    p.tell(f"Seat {slayed.seat} dies.")
+                    if p.role == Role.SCARLET_WOMAN and p.alive:
+                        p.tokens.append(ReminderToken.MINION_IS_THE_DEMON)
+            elif slayed.role == Role.RECLUSE:
+                if random.random() < 0.8:
+                    slayed.alive = False
+                    for p in g.getplayers():
+                        p.tell(f"Seat {slayed.seat} dies.")
+                
+                
+
+
 def star_pass(g):
     alive_minions = []
     for p in g.getplayers():
