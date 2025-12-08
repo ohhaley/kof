@@ -636,6 +636,7 @@ def washerwoman(g):
                 possible_pings = g.getplayers()
                 possible_pings.remove(p)
                 possible_characters = [role for role in Role if role_to_character_type[role] == CharacterType.TOWNSFOLK]
+                possible_characters.remove(Role.WASHERWOMAN)
                 pings = random.sample(possible_pings, 2)
                 character_learned = random.choice(possible_characters)
                 p.tell(f"From your ability you learn either seat {pings[0].seat} or seat {pings[1].seat} is the {character_learned.name}")
@@ -792,9 +793,22 @@ def fortune_teller(g):
             p.tell("Pick two players for your ability")
             ft_choices = p.choose_players_for_ability(g,2)
             if ReminderToken.FORTUNE_TELLER_RED_HERRING in ft_choices[0].tokens or role_to_character_type[ft_choices[0].role] == CharacterType.DEMON or ReminderToken.FORTUNE_TELLER_RED_HERRING in ft_choices[1].tokens or role_to_character_type[ft_choices[1].role] == CharacterType.DEMON:
-                p.tell("One of seat" + str(ft_choices[0].seat) + "or seat" + str(ft_choices[1].seat) + "is the demon")
+                if ReminderToken.DRUNK_IS_THE_DRUNK not in p.tokens and ReminderToken.POISONER_IS_POISONED not in p.tokens:
+                    p.tell("One of seat" + str(ft_choices[0].seat) + "or seat" + str(ft_choices[1].seat) + "is the demon.")
+                else:
+                    # 80% chance to get false info if droisoned
+                    if random.random() > 0.8:
+                        p.tell(f"Neither seat {ft_choices[0].seat} or seat {ft_choices[1].seat} is the demon.")
+                    else:
+                        p.tell("One of seat" + str(ft_choices[0].seat) + "or seat" + str(ft_choices[1].seat) + "is the demon.")
             else:
-                p.tell("Neither seat" + str(ft_choices[0].seat) + "or seat" + str(ft_choices[1].seat) + "is the demon")
+                if ReminderToken.DRUNK_IS_THE_DRUNK not in p.tokens and ReminderToken.POISONER_IS_POISONED not in p.tokens:
+                    p.tell("Neither seat" + str(ft_choices[0].seat) + "or seat" + str(ft_choices[1].seat) + "is the demon.")
+                else:
+                    if random.random() < 0.8:
+                        p.tell("One of seat" + str(ft_choices[0].seat) + "or seat" + str(ft_choices[1].seat) + "is the demon.")
+                    else:
+                        p.tell("Neither seat" + str(ft_choices[0].seat) + "or seat" + str(ft_choices[1].seat) + "is the demon.")
 
 
 def butler(g):
@@ -802,8 +816,10 @@ def butler(g):
     for p in g.getplayers():
         if p.role == Role.BUTLER:
             choice = p.choose_players_for_ability(g,1)[0]
+            while choice.role == Role.BUTLER:
+                choice = p.choose_players_for_ability(g, 1)[0]
             choice.tokens.append(ReminderToken.BUTLER_MASTER)
-            #They CAN CHOOSE THEMSELVES! TODO fix.
+            
 
 
 
@@ -858,7 +874,17 @@ def ravenkeeper(g):
             choice = p.choose_players_for_ability(g, 1)
             choice_seat = choice[0].seat
             choice_character = choice[0].role
-            p.tell(f"Seat {choice_seat} is {choice_character}.")
+            if ReminderToken.DRUNK_IS_THE_DRUNK not in p.tokens and ReminderToken.POISONER_IS_POISONED not in p.tokens:
+                p.tell(f"Seat {choice_seat} is {choice_character.name}.")
+            else:
+                if random.random() < 0.2:
+                    p.tell(f"Seat {choice_seat} is {choice_character.name}.")
+                else:
+                    possible_characters = [role for role in Role]
+                    possible_characters.remove(Role.RAVENKEEPER)
+                    character_learned = random.choice(possible_characters)
+                    p.tell(f"Seat {choice_seat} is {character_learned.name}.")
+            p.tokens.remove(ReminderToken.RAVENKEEPER_DIED_TONIGHT)
 
 
 
@@ -871,24 +897,38 @@ def undertaker(g):
                 if ReminderToken.UNDERTAKER_EXECUTED_TODAY in pl.tokens:
                     executed_role = pl.role
                     executed_seat = pl.seat
-                    p.tell(f"Seat {executed_seat} is {executed_role}.")
+                    if ReminderToken.DRUNK_IS_THE_DRUNK not in p.tokens and ReminderToken.POISONER_IS_POISONED not in p.tokens:
+                        p.tell(f"Seat {executed_seat} is {executed_role.name}.")
+                    else:
+                        if random.random() < 0.2:
+                            p.tell(f"Seat {executed_seat} is {executed_role}.")
+                        else:
+                            possible_characters = [role for role in Role]
+                            possible_characters.remove(Role.UNDERTAKER)
+                            character_learned = random.choice(possible_characters)
+                            p.tell(f"Seat {executed_seat} is {character_learned.name}")
                     pl.tokens.remove(ReminderToken.UNDERTAKER_EXECUTED_TODAY)
 
 
 def star_pass(g):
-    minions = []
+    alive_minions = []
     for p in g.getplayers():
         if role_to_character_type[p.role] == CharacterType.MINION and p.alive:
-            minions.append(p)
-    if minions != []:
-        for minion in minions:
-            if minion.role == Role.SCARLET_WOMAN and minion.alive:
+            alive_minions.append(p)
+    if alive_minions != []:
+        for minion in alive_minions:
+            if minion.role == Role.SCARLET_WOMAN:
                 minion.role = Role.IMP
-                minion.tell("You are now the Imp. You are evil.")
+                minion.tell("You are the " + Role.IMP.name)
+                minion.tell("You are a " + role_to_character_type[Role.IMP].name)
+                minion.tell("You are " + character_type_to_alignment[CharacterType.DEMON].name)
                 return
         
-        minion_to_imp = random.choice(minions)
-        minion_to_imp.tell("You are now the Imp. You are evil.")
+        minion_to_imp = random.choice(alive_minions)
+        minion_to_imp.tell("You are the " + Role.IMP.name)
+        minion_to_imp.tell("You are a " + role_to_character_type[Role.IMP].name)
+        minion_to_imp.tell("You are " + character_type_to_alignment[CharacterType.DEMON].name)
+        
         
 
 
