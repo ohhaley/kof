@@ -410,6 +410,11 @@ def do_evening(g):
         print("Seat "+str(on_the_block.seat)+" was executed")
         for p in g.getplayers(): p.tell("Seat "+str(on_the_block.seat)+" was executed and dies")
         on_the_block.alive = False
+        if on_the_block.role == Role.IMP:
+            for p in g.getplayers():
+                if p.role == Role.SCARLET_WOMAN and p.alive:
+                    p.tokens.append(ReminderToken.MINION_IS_THE_DEMON)
+                    scarlet_woman(g)
     else:
         print("No one was executed")
         for p in g.getplayers(): p.tell("No one was executed")
@@ -963,6 +968,7 @@ def slayer(g, slayer, slayed):
                     p.tell(f"Seat {slayed.seat} dies.")
                     if p.role == Role.SCARLET_WOMAN and p.alive:
                         p.tokens.append(ReminderToken.MINION_IS_THE_DEMON)
+                        scarlet_woman(g)
             elif slayed.role == Role.RECLUSE:
                 if random.random() < 0.8:
                     slayed.alive = False
