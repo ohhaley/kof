@@ -94,14 +94,20 @@ class Player:
         self.tell("I nominated Seat "+str(choice.seat))
         return choice
     
-    def getvote(self,nominee):
+    def getvote(self,nominee,butler_master_voted=False):
+        if self.role == Role.BUTLER and butler_master_voted == False:
+            self.tell("I could not vote because I am the BUTLER")
+            return False
+        #if self.role == Role.BUTLER: print("\n\n\n\n\n\n\n\n********HOLD THE PHONE I GOT TO VOTE EVEN THOUGH I'M THE BUTLER**********\n\n\n\n\n\n\n")
         if random.random() > 0.5:
             #vote
             self.tell("I voted for Seat "+str(nominee.seat))
+            if not self.alive: self.canvote = False
             return True
         else:
             #no vote
             self.tell("I did not vote")
+            return False
 
 
 class GamePhase(Enum):
@@ -393,14 +399,22 @@ def do_evening(g):
             for i in range(nominee.seat + 1):
                 players_counterclockwise.append(players[i])
             players_in_order.extend(players_counterclockwise)
-            for p in players_in_order: #TODO sort this in circle order
-                p.tell("Seat "+str(player.seat)+" has nominated Seat "+str(nominee.seat))
-                p.tell("Total votes right now: "+str(total_votes)+", total needed: "+str(votes_to_die))
-                didvote = p.getvote(nominee)
-                if didvote:
-                    total_votes = total_votes+1
-                    for q in g.getplayers():
-                        q.tell("Total votes: "+str(total_votes)+", as Seat "+str(p.seat)+" has voted")
+            butler_master_voted = False
+            for p in players_in_order:
+                if p.canvote:
+                    #print(p.seat,p.role.name,p.alive,p.canvote)
+                    p.tell("Seat "+str(player.seat)+" has nominated Seat "+str(nominee.seat))
+                    p.tell("Total votes right now: "+str(total_votes)+", total needed: "+str(votes_to_die))
+                    didvote = p.getvote(nominee,butler_master_voted=butler_master_voted)
+                    if didvote:
+                        total_votes = total_votes+1
+                        if ReminderToken.BUTLER_MASTER in p.tokens: butler_master_voted = True
+                        for q in g.getplayers():
+                            if p.alive:
+                                q.tell("Total votes: "+str(total_votes)+", as Seat "+str(p.seat)+" has voted")
+                            else:
+                                q.tell("Total votes: "+str(total_votes)+", as Seat "+str(p.seat)+" has voted, using a deadvote")
+                    #print("Butler master voted: "+str(butler_master_voted))
             print(total_votes,votes_to_die)
             if total_votes > votes_to_die:
                 on_the_block = nominee
