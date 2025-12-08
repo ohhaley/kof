@@ -385,7 +385,15 @@ def do_evening(g):
         if not nominee == None:
             can_be_nominated.remove(nominee)
             total_votes = 0
-            for p in g.getplayers(): #TODO sort this in circle order
+            players = g.getplayers()
+            players_in_order = []
+            players_counterclockwise = []
+            for i in range(nominee.seat + 1, len(players)):
+                players_in_order.append(players[i])
+            for i in range(nominee.seat + 1):
+                players_counterclockwise.append(players[i])
+            players_in_order.extend(players_counterclockwise)
+            for p in players_in_order: #TODO sort this in circle order
                 p.tell("Seat "+str(player.seat)+" has nominated Seat "+str(nominee.seat))
                 p.tell("Total votes right now: "+str(total_votes)+", total needed: "+str(votes_to_die))
                 didvote = p.getvote(nominee)
