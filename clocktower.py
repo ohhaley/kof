@@ -46,7 +46,7 @@ class Game:
 
 #Class representing a player
 class Player:
-    def __init__(self,role,alignment,alive,canvote,badinfo,seat,tokens,history):
+    def __init__(self,role,alignment,alive,canvote,badinfo,seat,tokens,history, name):
         self.role = role
         self.alignment = alignment
         self.alive = alive
@@ -55,6 +55,7 @@ class Player:
         self.seat = seat
         self.tokens = tokens
         self.history = history
+        self.name = name
     
     #Adds a message to player's message history
     def tell(self,msg):
@@ -65,7 +66,7 @@ class Player:
     def choose_players_for_ability(self,g,num):
         choices = random.sample(g.getplayers(),num)
         for choice in choices:
-            self.tell("I chose Seat "+str(choice.seat)+" for my ability")
+            self.tell(f"I chose {choice.name} for my ability")
         return choices
     
     # function to allow player to choose a player to talk to
@@ -76,13 +77,13 @@ class Player:
         return choice
 
     def say_publicly(self):
-        msg = "Seat "+str(self.seat)+" says publicly: Hi! I am the "+self.role.name
+        msg = f"{self.name} says publicly: Hi! I am the "+self.role.name
         if random.random()<0.2: return msg
         else: return ""
         #TODO
 
     def say_privately(self, player_to_tell):
-        msg = f"Seat {self.seat} tells you: Hi! I am the {self.role.name}"
+        msg = f"{self.name} tells you: Hi! I am the {self.role.name}"
         return msg
     
     def nominate_someone_or_not(self,can_be_nominated):
@@ -91,7 +92,7 @@ class Player:
             self.tell("I did not nominate anyone")
             return None
         choice = random.choice(can_be_nominated)
-        self.tell("I nominated Seat "+str(choice.seat))
+        self.tell(f"I nominated {choice.name}")
         return choice
     
     def getvote(self,nominee,butler_master_voted=False):
@@ -101,7 +102,7 @@ class Player:
         #if self.role == Role.BUTLER: print("\n\n\n\n\n\n\n\n********HOLD THE PHONE I GOT TO VOTE EVEN THOUGH I'M THE BUTLER**********\n\n\n\n\n\n\n")
         if random.random() > 0.5:
             #vote
-            self.tell("I voted for Seat "+str(nominee.seat))
+            self.tell(f"I voted for {nominee.name}")
             if not self.alive: self.canvote = False
             return True
         else:
@@ -236,6 +237,7 @@ seats = list(range(0,num_players))
 random.shuffle(seats)
 seat = 0
 
+names = ["Red", "Orange", "Yellow", "Purple", "Green", "Blue", "Pink", "Black", "White", "Brown", "Gray", "Indigo", "Violet", "Cyan", "Lime",]
 
 #Assign roles and seats to players
 for type in num_players_to_num_roles[num_players]:
@@ -246,8 +248,10 @@ for type in num_players_to_num_roles[num_players]:
     #if type == CharacterType.TOWNSFOLK: random_roles = [Role.WASHERWOMAN, Role.LIBRARIAN, Role.INVESTIGATOR, Role.MAYOR, Role.MONK]
     #if type == CharacterType.MINION: random_roles = [Role.BARON]
     for role in random_roles:
-        players[role_to_character_type[role]].append(Player(role,character_type_to_alignment[role_to_character_type[role]],True,True,False,seats[seat],[],[]))
+        name = random.choice(names)
+        players[role_to_character_type[role]].append(Player(role,character_type_to_alignment[role_to_character_type[role]],True,True,False,seats[seat],[],[], name))
         seat = seat + 1
+        names.remove(name)
 
 # Create list of not in play good characters
 all_roles = []
@@ -274,8 +278,8 @@ for minion in in_play_minions:
         removed_townsfolk_role_2 = townsfolk_removed[1].role
         removed_townsfolk_seat_2 = townsfolk_removed[1].seat
         # create new outsider players
-        new_outsider_1 = Player(added_outsiders[0],character_type_to_alignment[CharacterType.OUTSIDER], True, True, False, removed_townsfolk_seat_1, [], [])
-        new_outsider_2 = Player(added_outsiders[1], character_type_to_alignment[CharacterType.OUTSIDER], True, True, False, removed_townsfolk_seat_2, [], [])
+        new_outsider_1 = Player(added_outsiders[0],character_type_to_alignment[CharacterType.OUTSIDER], True, True, False, removed_townsfolk_seat_1, [], [], townsfolk_removed[0].name)
+        new_outsider_2 = Player(added_outsiders[1], character_type_to_alignment[CharacterType.OUTSIDER], True, True, False, removed_townsfolk_seat_2, [], []townsfolk_removed[1].name)
         # add the outsiders 
         players[CharacterType.OUTSIDER].append(new_outsider_1)
         players[CharacterType.OUTSIDER].append(new_outsider_2)
@@ -308,7 +312,7 @@ for i in range(len(outsiders)):
         seat = outsiders[i].seat
         players[CharacterType.OUTSIDER].pop(i)
         new_townsfolk = random.choice(available_townsfolk)
-        players[CharacterType.TOWNSFOLK].append(Player(new_townsfolk, character_type_to_alignment[CharacterType.TOWNSFOLK], True, True, False, seat, [], []))
+        players[CharacterType.TOWNSFOLK].append(Player(new_townsfolk, character_type_to_alignment[CharacterType.TOWNSFOLK], True, True, False, seat, [], [], outsiders[i].name))
 
         # randomly assign a townsfolk to be the drunk
         random_player = random.randint(0, len(players[CharacterType.TOWNSFOLK]) - 1)
@@ -342,7 +346,7 @@ def do_day(g, num_conversations):
             dead_player = p
     if dead_player:
         for p in players:
-            p.tell(f"Seat {dead_player.seat} died in the night.")
+            p.tell(f"{dead_player.name} died in the night.")
         dead_player.tokens.remove(ReminderToken.IMP_WILL_DIE_TONIGHT)
     else:
         for p in players:
