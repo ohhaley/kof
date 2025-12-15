@@ -279,7 +279,7 @@ for minion in in_play_minions:
         removed_townsfolk_seat_2 = townsfolk_removed[1].seat
         # create new outsider players
         new_outsider_1 = Player(added_outsiders[0],character_type_to_alignment[CharacterType.OUTSIDER], True, True, False, removed_townsfolk_seat_1, [], [], townsfolk_removed[0].name)
-        new_outsider_2 = Player(added_outsiders[1], character_type_to_alignment[CharacterType.OUTSIDER], True, True, False, removed_townsfolk_seat_2, [], []townsfolk_removed[1].name)
+        new_outsider_2 = Player(added_outsiders[1], character_type_to_alignment[CharacterType.OUTSIDER], True, True, False, removed_townsfolk_seat_2, [], [], townsfolk_removed[1].name)
         # add the outsiders 
         players[CharacterType.OUTSIDER].append(new_outsider_1)
         players[CharacterType.OUTSIDER].append(new_outsider_2)
@@ -407,7 +407,7 @@ def do_evening(g):
             for p in players_in_order:
                 if p.canvote:
                     #print(p.seat,p.role.name,p.alive,p.canvote)
-                    p.tell("Seat "+str(player.seat)+" has nominated Seat "+str(nominee.seat))
+                    p.tell(f"{player.name} has nominated {nominee.name}")
                     p.tell("Total votes right now: "+str(total_votes)+", total needed: "+str(votes_to_die))
                     didvote = p.getvote(nominee,butler_master_voted=butler_master_voted)
                     if didvote:
@@ -415,9 +415,9 @@ def do_evening(g):
                         if ReminderToken.BUTLER_MASTER in p.tokens: butler_master_voted = True
                         for q in g.getplayers():
                             if p.alive:
-                                q.tell("Total votes: "+str(total_votes)+", as Seat "+str(p.seat)+" has voted")
+                                q.tell("Total votes: "+str(total_votes)+", as "+str(p.name)+" has voted")
                             else:
-                                q.tell("Total votes: "+str(total_votes)+", as Seat "+str(p.seat)+" has voted, using a deadvote")
+                                q.tell("Total votes: "+str(total_votes)+", as "+str(p.name)+" has voted, using a deadvote")
                     #print("Butler master voted: "+str(butler_master_voted))
             print(total_votes,votes_to_die)
             if total_votes > votes_to_die:
@@ -425,7 +425,7 @@ def do_evening(g):
                 votes_to_die = total_votes
                 for p in g.getplayers():
                     p.tell("There were "+str(total_votes)+", with "+str(votes_to_die)+" needed")
-                    p.tell("Seat "+str(nominee.seat)+" is on the block")
+                    p.tell(f"{nominee.name} is on the block")
             elif total_votes == votes_to_die:
                 on_the_block = None
                 for p in g.getplayers():
@@ -433,8 +433,8 @@ def do_evening(g):
                     p.tell("No one is on the block")
 
     if not on_the_block == None:
-        print("Seat "+str(on_the_block.seat)+" was executed")
-        for p in g.getplayers(): p.tell("Seat "+str(on_the_block.seat)+" was executed and dies")
+        print(f"{on_the_block.name} was executed")
+        for p in g.getplayers(): p.tell(f"{on_the_block.name} was executed and dies")
         on_the_block.alive = False
         if on_the_block.role == Role.IMP:
             for p in g.getplayers():
@@ -471,12 +471,12 @@ def first_night(g):
 
     #Minion info
     for p in g.players[CharacterType.MINION]:
-        p.tell("Seat "+str(g.demon().seat)+" is the Demon")
+        p.tell(g.demon().name+" is the Demon")
 
     #Demon info
     for p in g.players[CharacterType.DEMON]:
         for q in g.players[CharacterType.MINION]:
-            p.tell("Seat "+str(q.seat)+" is a Minion")
+            p.tell(q.name+" is a Minion")
         for bluff in g.bluffs:
             p.tell(bluff.name+" is not in play")
 
@@ -639,9 +639,9 @@ def spy(g):
     for p in players:
         if p.role == Role.SPY:
             for player in players:
-                p.tell(f"Seat {player.seat} is {player.role.name}")
+                p.tell(f"{player.name} is {player.role.name}")
                 for token in player.tokens:
-                    p.tell(f"Seat {player.seat} has the {token} token") 
+                    p.tell(f"{player.name} has the {token.name} token") 
 
 #Washerwoman gets info
 def washerwoman(g):
@@ -662,7 +662,7 @@ def washerwoman(g):
                 fake_person.tokens.append(ReminderToken.WASHERWOMAN_FAKE)
                 pings = [real_person,fake_person]
                 random.shuffle(pings)
-                p.tell("From your ability you learn either Seat "+str(pings[0].seat)+" or Seat "+str(pings[1].seat)+" is the "+real_person.role.name)
+                p.tell("From your ability you learn either Seat "+pings[0].name+" or Seat "+pings[1].name+" is the "+real_person.role.name)
             else:
                 possible_pings = g.getplayers()
                 possible_pings.remove(p)
@@ -670,7 +670,7 @@ def washerwoman(g):
                 possible_characters.remove(Role.WASHERWOMAN)
                 pings = random.sample(possible_pings, 2)
                 character_learned = random.choice(possible_characters)
-                p.tell(f"From your ability you learn either seat {pings[0].seat} or seat {pings[1].seat} is the {character_learned.name}")
+                p.tell(f"From your ability you learn either seat {pings[0].name} or seat {pings[1].name} is the {character_learned.name}")
 
 
 
@@ -697,7 +697,7 @@ def librarian(g):
                     # make sure the librarian learns the Drunk and not a townsfolk if librarian is learning the drunk
                     outsider_to_learn = Role.DRUNK.name if ReminderToken.DRUNK_IS_THE_DRUNK in real_person.tokens else real_person.role.name
                     random.shuffle(pings)
-                    p.tell("From your ability you learn either Seat "+str(pings[0].seat)+" or Seat "+str(pings[1].seat)+" is the "+ outsider_to_learn)
+                    p.tell("From your ability you learn either Seat "+pings[0].name+" or Seat "+pings[1].name+" is the "+ outsider_to_learn)
             else:
                 if random.random() < 0.20:
                     p.tell("From your ability you learn there are 0 outsiders in play")
@@ -707,7 +707,7 @@ def librarian(g):
                     possible_characters = [role for role in Role if role_to_character_type[role] == CharacterType.OUTSIDER]
                     pings = random.sample(possible_pings, 2)
                     character_learned = random.choice(possible_characters)
-                    p.tell(f"From your ability you learn either seat {pings[0].seat} or {pings[1].seat} is the {character_learned.name}")
+                    p.tell(f"From your ability you learn either seat {pings[0].name} or {pings[1].name} is the {character_learned.name}")
 
 
 #Investigator gets info
@@ -730,7 +730,7 @@ def investigator(g):
                             other_ping = random.choice(possible_pings)
                             pings = [pl, other_ping]
                             random.shuffle(pings)
-                            p.tell(f"From your ability you learn either seat {pings[0].seat} or seat {pings[1].seat} is the {character_learned.name}.")
+                            p.tell(f"From your ability you learn either seat {pings[0].name} or seat {pings[1].name} is the {character_learned.name}.")
 
                 else:
                     possible_pings = g.players[CharacterType.MINION].copy()
@@ -743,7 +743,7 @@ def investigator(g):
                     fake_person.tokens.append(ReminderToken.INVESTIGATOR_FAKE)
                     pings = [real_person,fake_person]
                     random.shuffle(pings)
-                    p.tell("From your ability you learn either Seat "+str(pings[0].seat)+" or Seat "+str(pings[1].seat)+" is the "+real_person.role.name)
+                    p.tell("From your ability you learn either Seat "+pings[0].name+" or Seat "+pings[1].name+" is the "+real_person.role.name)
             else:
                 possible_pings = g.getplayers()
                 possible_pings.remove(p)
@@ -751,7 +751,7 @@ def investigator(g):
                 pings = random.sample(possible_pings, 2)
                 random.shuffle(pings)
                 character_learned = random.choice(possible_characters)
-                p.tell(f"From your ability, you learn either seat {pings[0].seat} or seat {pings[1].seat} is the {character_learned.name}")
+                p.tell(f"From your ability, you learn either seat {pings[0].name} or seat {pings[1].name} is the {character_learned.name}")
 
 
 #Chef gets info
@@ -826,15 +826,15 @@ def empath(g):
     for p in g.getplayers():
         if p.role == Role.EMPATH:
             if ReminderToken.DRUNK_IS_THE_DRUNK not in p.tokens and ReminderToken.POISONER_IS_POISONED not in p.tokens:
-                p.tell(str(evil_empath_neighbors) + " of seats " + str(empath_neighbor_seats[0].seat) + " and " + str(empath_neighbor_seats[1].seat) + " are evil")
+                p.tell(str(evil_empath_neighbors) + " of " + empath_neighbor_seats[0].name + " and " + empath_neighbor_seats[1].name + " are evil")
             else:
                 nums = [0, 1, 2]
                 nums.remove(evil_empath_neighbors)
                 fake_number = random.choice(nums)
                 if random.random() < 0.8:
-                    p.tell(f"{fake_number} of seats {empath_neighbor_seats[0].seat} and {empath_neighbor_seats[1].seat} are evil")
+                    p.tell(f"{fake_number} of  {empath_neighbor_seats[0].name} and {empath_neighbor_seats[1].name} are evil")
                 else:
-                    p.tell(f"{evil_empath_neighbors} of seats {empath_neighbor_seats[0].seat} and {empath_neighbor_seats[1].seat} are evil")
+                    p.tell(f"{evil_empath_neighbors} of {empath_neighbor_seats[0].name} and {empath_neighbor_seats[1].name} are evil")
 
                 
 
@@ -853,24 +853,24 @@ def fortune_teller(g):
             ft_choices = p.choose_players_for_ability(g,2)
             if ReminderToken.FORTUNE_TELLER_RED_HERRING in ft_choices[0].tokens or role_to_character_type[ft_choices[0].role] == CharacterType.DEMON or ReminderToken.FORTUNE_TELLER_RED_HERRING in ft_choices[1].tokens or role_to_character_type[ft_choices[1].role] == CharacterType.DEMON:
                 if ReminderToken.DRUNK_IS_THE_DRUNK not in p.tokens and ReminderToken.POISONER_IS_POISONED not in p.tokens:
-                    p.tell("One of seat" + str(ft_choices[0].seat) + "or seat" + str(ft_choices[1].seat) + "is the demon.")
+                    p.tell(f"One of {ft_choices[0].name} or {ft_choices[1].name} is the demon.")
                 else:
                     # 80% chance to get false info if droisoned
                     if random.random() > 0.8:
-                        p.tell(f"Neither seat {ft_choices[0].seat} or seat {ft_choices[1].seat} is the demon.")
+                        p.tell(f"Neither {ft_choices[0].name} or {ft_choices[1].name} is the demon.")
                     else:
-                        p.tell("One of seat" + str(ft_choices[0].seat) + "or seat" + str(ft_choices[1].seat) + "is the demon.")
+                        p.tell(f"One of {ft_choices[0].name} or {ft_choices[1].name} is the demon.")
             else:
                 if ReminderToken.DRUNK_IS_THE_DRUNK not in p.tokens and ReminderToken.POISONER_IS_POISONED not in p.tokens:
                     if ft_choices[0].role == Role.RECLUSE or ft_choices[1].role == Role.RECLUSE and random.random() < 0.8:
-                        p.tell("One of seat" + str(ft_choices[0].seat) + "or seat" + str(ft_choices[1].seat) + "is the demon.")
+                        p.tell(f"One of {ft_choices[0].name} or {ft_choices[1].name} is the demon.")
                     else:
-                        p.tell("Neither seat" + str(ft_choices[0].seat) + "or seat" + str(ft_choices[1].seat) + "is the demon.")
+                        p.tell(f"Neither {ft_choices[0].name} or {ft_choices[1].name} is the demon.")
                 else:
                     if random.random() < 0.8:
-                        p.tell("One of seat" + str(ft_choices[0].seat) + "or seat" + str(ft_choices[1].seat) + "is the demon.")
+                        p.tell(f"One of {ft_choices[0].name} or {ft_choices[1].name} is the demon.")
                     else:
-                        p.tell("Neither seat" + str(ft_choices[0].seat) + "or seat" + str(ft_choices[1].seat) + "is the demon.")
+                        p.tell(f"Neither {ft_choices[0].name} or {ft_choices[1].name} is the demon.")
 
 
 def butler(g):
@@ -940,18 +940,18 @@ def ravenkeeper(g):
                 if choice.role == Role.RECLUSE and random.random() < 0.8:
                     possible_characters = [role for role in Role if role_to_character_type[role] == CharacterType.MINION or role_to_character_type[role] == CharacterType.DEMON]
                     character_learned = random.choice(possible_characters)
-                    p.tell(f"Seat {choice_seat} is {character_learned.name}")
+                    p.tell(f"{choice[0].name} is {character_learned.name}")
                 else:
-                    p.tell(f"Seat {choice_seat} is {choice_character.name}.")
+                    p.tell(f"{choice[0].name} is {choice_character.name}.")
             else:
                 if random.random() < 0.2:
-                    p.tell(f"Seat {choice_seat} is {choice_character.name}.")
+                    p.tell(f"{choice[0].name} is {choice_character.name}.")
                 else:
                     possible_characters = [role for role in Role]
                     possible_characters.remove(Role.RAVENKEEPER)
                     possible_characters.remove(choice_character)
                     character_learned = random.choice(possible_characters)
-                    p.tell(f"Seat {choice_seat} is {character_learned.name}.")
+                    p.tell(f"{choice[0].name} is {character_learned.name}.")
             p.tokens.remove(ReminderToken.RAVENKEEPER_DIED_TONIGHT)
 
 
@@ -965,22 +965,23 @@ def undertaker(g):
                 if ReminderToken.UNDERTAKER_EXECUTED_TODAY in pl.tokens:
                     executed_role = pl.role
                     executed_seat = pl.seat
+                    executed_name = pl.name
                     if ReminderToken.DRUNK_IS_THE_DRUNK not in p.tokens and ReminderToken.POISONER_IS_POISONED not in p.tokens:
                         if executed_role == Role.RECLUSE and random.random() < 0.8:
                             possible_characters = [role for role in Role if role_to_character_type[role] == CharacterType.MINION or role_to_character_type[role] == CharacterType.DEMON]
                             character_learned = random.choice(possible_characters)
-                            p.tell(f"Seat {executed_seat} is {character_learned.name}")
+                            p.tell(f"{executed_name} is {character_learned.name}")
                         else:
-                            p.tell(f"Seat {executed_seat} is {executed_role.name}.")
+                            p.tell(f"{executed_name} is {executed_role.name}.")
                     else:
                         if random.random() < 0.2:
-                            p.tell(f"Seat {executed_seat} is {executed_role}.")
+                            p.tell(f"{executed_name} is {executed_role.name}.")
                         else:
                             possible_characters = [role for role in Role]
                             possible_characters.remove(Role.UNDERTAKER)
                             possible_characters.remove(executed_role)
                             character_learned = random.choice(possible_characters)
-                            p.tell(f"Seat {executed_seat} is {character_learned.name}")
+                            p.tell(f"{executed_name} is {character_learned.name}")
                     pl.tokens.remove(ReminderToken.UNDERTAKER_EXECUTED_TODAY)
 
 
@@ -991,7 +992,7 @@ def slayer(g, slayer, slayed):
             if slayed.role == Role.IMP:
                 slayed.alive = False
                 for p in g.getplayers():
-                    p.tell(f"Seat {slayed.seat} dies.")
+                    p.tell(f"{slayed.name} dies.")
                     if p.role == Role.SCARLET_WOMAN and p.alive:
                         p.tokens.append(ReminderToken.MINION_IS_THE_DEMON)
                         scarlet_woman(g)
@@ -999,7 +1000,7 @@ def slayer(g, slayer, slayed):
                 if random.random() < 0.8:
                     slayed.alive = False
                     for p in g.getplayers():
-                        p.tell(f"Seat {slayed.seat} dies.")
+                        p.tell(f"{slayed.name} dies.")
                 
                 
 
