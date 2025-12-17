@@ -177,6 +177,32 @@ def vote_player(history: list[str], suspicions: PlayerList, nominees: PlayerList
     response2 = model.create_chat_completion(messages=message_template, response_format={"type": "json_object", "schema": Player.model_json_schema()}, temperature=0.1)
     print(response2["choices"][0]["message"]["content"])
 
+
+def choose_players(history: list[str], suspicions: PlayerList, model: Llama, player_info: PlayerInfo, num):
+    hist = combine_history(hist)
+
+    system_prompt = f"You are playing a social deduction game where your goal is to find evil players." \
+                    "You are player {player_info.name}, you are {player_info.alignment}, your role is the {player_info.role}." \
+                    "Given all information currently available to you and a list of player suspiciouns you have previously constructed, decide what players to choose for your ability."
+    
+    suspicions_list = get_suspicion_list(suspicions)
+    message_template = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": f"Analyze the following information and existing suspicions and decide the {num} players to choose for your ability: \nInformation:\n{hist}\nSuspicions: \n{suspicions_list}"}
+    ]
+
+    response = model.create_chat_completion(messages=message_template, temperature=0.1)
+    print(response["choices"][0]["message"]["content"])
+
+    # Adds the model's response to the chat history and gives it a new task
+    message_template.append({"role": "assistant", "content": response["choices"][0]["message"]["content"]})
+    message_template.append({"role": "user", "content": f"From your reasoning, give a list of the {num} players to choose for your ability. There must be {num} of them in the list."})
+
+    response2 = model.create_chat_completion(messages=message_template, response_format={"type": "json_object", "schema": PlayerList.model_json_schema()}, temperature=0.1)
+    print(response2["choices"][0]["message"]["content"])
+
+    return response2
+
 # An example history of information that should clear Green and place suspicion on Red and Yellow
 example_history = ["Green says Green is the investigator",
                    "Green says Green investigated Purple and Purple is the townsfolk.",
