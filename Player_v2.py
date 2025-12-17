@@ -4,6 +4,10 @@ from pydantic import BaseModel
 # gemma-3-4b-it-Q4_0.gguf
 llm = Llama(model_path=r"Qwen3-4b-Instruct.gguf", n_gpu_layers=-1, verbose=False, n_ctx=2048)
 
+def get_model(context_window = 2048):
+    llm = Llama(model_path=r"Qwen3-4b-Instruct.gguf", n_gpu_layers=-1, verbose=False, n_ctx=context_window, mirostat_mode=2)
+    return llm
+
 class PlayerInfo():
     name: str
     alignment: str
@@ -66,7 +70,7 @@ def build_suspicions(history: list[str], suspicions: PlayerList, model: Llama, p
         {"role": "user", "content": f"Analyze the following information and provide your reasoning:\nInformation:\n{hist}\nCurrent Suspicions:\n{suspicions_list}"}]
     
     # Ask the model to evaluate how suspicious each model is
-    response = model.create_chat_completion(messages=message_template, temperature=0.1)
+    response = model.create_chat_completion(messages=message_template, temperature=0.6,max_tokens=512)
     print(response["choices"][0]["message"]["content"])
 
     # Adds the model's response to the chat history and gives it a new task
@@ -74,7 +78,7 @@ def build_suspicions(history: list[str], suspicions: PlayerList, model: Llama, p
     message_template.append({"role": "user", "content": "From your reasoning, update the list of players to account for any change in suspicion level. List suspicion as a value from 0.0 to 1.0, representing a percentage."})
 
     # Ask the model to use their own reasoning to create a PlayerList of suspicion
-    response2 = model.create_chat_completion(messages=message_template,response_format={"type": "json_object", "schema": PlayerList.model_json_schema()},temperature=0.1)
+    response2 = model.create_chat_completion(messages=message_template,response_format={"type": "json_object", "schema": PlayerList.model_json_schema()},temperature=0.6,max_tokens=512)
     print(response2["choices"][0]["message"]["content"])
     return response2["choices"][0]["message"]["content"]
 

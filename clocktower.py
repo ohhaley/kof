@@ -1,5 +1,10 @@
 import random
 from enum import Enum
+# To enable LLM functionality in this file: uncomment the next two lines, as well as the last line of code in this program.
+# You ALSO have to comment out all of the code that isn't in a class/function in Player_v2.
+# If you don't do that, Python will run that code and give an error.
+#from Player_v2 import build_suspicions, PlayerInfo, get_model, PlayerList
+#from Player_v2 import Player as NewPlayer
 
 #Class representing a given game
 class Game:
@@ -18,7 +23,7 @@ class Game:
         print("Days: ",self.num_days,"Game phase: ",self.game_phase)
         for role in self.players:
             for p in self.players[role]:
-                print(p.role,p.alignment,p.alive,p.canvote,p.badinfo,p.seat,p.tokens,p.history,"\n")
+                print(p.name,p.role,p.alignment,p.alive,p.canvote,p.badinfo,p.seat,p.tokens,p.history,"\n")
 
     #Get a list of all players -- helpful since Game.players is a dict
     def getplayers(self):
@@ -109,7 +114,15 @@ class Player:
             #no vote
             self.tell("I did not vote")
             return False
-
+        
+    def buildsuspicions(self,g):
+        all_players = []
+        for player in g.getplayers():
+            all_players.append(NewPlayer(name=player.name,suspicion = 0.0))
+        suspicions = PlayerList(players = all_players)
+        model = get_model()
+        pi = PlayerInfo(self.name,self.alignment.name,self.role.name)
+        build_suspicions(self.history,suspicions,model,pi)
 
 class GamePhase(Enum):
     NIGHT = 1
@@ -310,9 +323,9 @@ outsiders = players[CharacterType.OUTSIDER]
 for i in range(len(outsiders)):
     if outsiders[i].role == Role.DRUNK:
         seat = outsiders[i].seat
-        players[CharacterType.OUTSIDER].pop(i)
         new_townsfolk = random.choice(available_townsfolk)
         players[CharacterType.TOWNSFOLK].append(Player(new_townsfolk, character_type_to_alignment[CharacterType.TOWNSFOLK], True, True, False, seat, [], [], outsiders[i].name))
+        players[CharacterType.OUTSIDER].pop(i)
 
         # randomly assign a townsfolk to be the drunk
         random_player = random.randint(0, len(players[CharacterType.TOWNSFOLK]) - 1)
@@ -1042,3 +1055,6 @@ start_game(g)
     
 
 g.printgameinfo()
+
+#g.getplayers()[0].buildsuspicions(g)
+#^^this should work.
