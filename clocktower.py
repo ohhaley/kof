@@ -662,6 +662,9 @@ def start_game(g):
     # do the first night
     first_night(g)
 
+    for p in g.getplayers():
+        p.updatesuspicions()
+
 
     g.incrementtime()
     # loop for rest of the game
@@ -669,11 +672,14 @@ def start_game(g):
         print(g.num_days,g.game_phase.name,len(alive_players)," players")
         #daytime happens, each player can tell something to three other players
         do_day(g, 3)
+        for p in g.getplayers():
+            p.updatesuspicions()
         g.incrementtime()
         #print(g.game_phase)
         # do evening
         executed_player = do_evening(g)
-        
+        for p in g.getplayers():
+            p.updatesuspicions()
 
         # update alive players list
         for player in alive_players:
@@ -713,6 +719,8 @@ def start_game(g):
         #print(g.game_phase)
         # do next night
         other_nights(g)
+        for p in g.getplayers():
+            p.updatesuspicions()
         # update alive players list
         for player in alive_players:
             if not player.alive:
