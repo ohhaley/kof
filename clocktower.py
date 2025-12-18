@@ -1,6 +1,7 @@
 import random
 from enum import Enum
 import json
+import math
 # To enable LLM functionality in this file: uncomment the next two lines, as well as the last line of code in this program.
 # You ALSO have to comment out all of the code that isn't in a class/function in Player_v2.
 # If you don't do that, Python will run that code and give an error.
@@ -59,6 +60,9 @@ class Game:
             if p.alignment == Alignment.GOOD: susses.append([p,0.0])
             else: susses.append([p,1.0])
 
+        sorted_susses = sorted(susses, key=lambda player: player[0].name)
+        return sorted_susses
+
 
 #Class representing a player
 class Player:
@@ -94,9 +98,14 @@ class Player:
             self.tell(f"I chose {choice.name} for my ability")
         with open("finetune.csv","a") as f:
             f.write("[[::]]")
-            self.suspicions
-            g.realsuspicions()
-            #f.write([euclidean dist]+"\n")
+            self_suspicions = []
+            for p in self.suspicions.players:
+                self_suspicions.append(p.suspicion)
+            real_suspicions = [] 
+            for p in g.realsuspicions():
+                real_suspicions.append(p[1])
+            euclidean_dist = math.dist(self_suspicions, real_suspicions)
+            f.write(f"{euclidean_dist}\n")
         return choices
     
     # function to allow player to choose a player to talk to
@@ -191,8 +200,8 @@ class Player:
         for val in suspicions_dict.values():
             for item in val:
                 new_suspicions.append(NewPlayer(name = item['name'], suspicion = item['suspicion']))
-        
-        self.suspicions = PlayerList(players = new_suspicions)
+        sorted_suspicions = sorted(new_suspicions, key=lambda player: player.name)
+        self.suspicions = PlayerList(players = sorted_suspicions)
 
 class GamePhase(Enum):
     NIGHT = 1
