@@ -41,7 +41,7 @@ class Question(BaseModel):
     target: Player
     question: str
 
-class QuestionData():
+class QuestionData:
     target: Player
     question: str
     questioner: Player

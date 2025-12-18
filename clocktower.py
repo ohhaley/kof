@@ -4,7 +4,7 @@ import json
 # To enable LLM functionality in this file: uncomment the next two lines, as well as the last line of code in this program.
 # You ALSO have to comment out all of the code that isn't in a class/function in Player_v2.
 # If you don't do that, Python will run that code and give an error.
-from Player_v3 import build_suspicions, PlayerInfo, get_model, PlayerList, choose_players, nominate_player, vote_player, request_information
+from Player_v3 import build_suspicions, PlayerInfo, get_model, PlayerList, choose_players, nominate_player, vote_player, request_information, answer_question, Question, QuestionData
 from Player_v3 import Player as NewPlayer
 
 model = get_model()
@@ -87,12 +87,13 @@ class Player:
         return choices
     
     # function to allow player to choose a player to talk to
-    def choose_player_to_talk_to(self, g):
+    def ask_private_question(self, g):
         pi = PlayerInfo(self.name,self.alignment.name,self.role.name)
         question_json = request_information(self.history, self.suspicions, model, pi)
         question = json.loads(question_json)
+        self.tell("You asked "+question["target"]["name"]+": "+question["question"])
         for p in g.getplayers():
-            if p.name == question["target"]["name"]: return p, question["question"]
+            if p.name == question["target"]["name"]: return p, question["question"], self
         return None, question["question"]
         #players = g.getplayers()
         #possible_choices = [player for player in players if player.seat != self.seat]
@@ -105,9 +106,24 @@ class Player:
         else: return ""
         #TODO
 
-    #def say_privately(self, player_to_tell, msg=""):
-        #msg = f"{self.name} tells you: Hi! I am the {self.role.name}"
-        #return msg
+    def respond_privately(self, msg, questioner):
+        pi = PlayerInfo(self.name,self.alignment.name,self.role.name)
+        target_sus = 0
+        questioner_sus = 0
+        for p in self.suspicions.players:
+            if p.name == self.name:
+                target_sus = p.suspicion
+            if p.name == questioner.name:
+                questioner_sus = p.suspicion
+        bad_qi = QuestionData(None,None,None)
+        target_for_input = NewPlayer(name = self.name,suspicion = target_sus)
+        questioner_for_input = NewPlayer(name = questioner.name,suspicion = questioner_sus)
+        qi = QuestionData(target_for_input, msg, questioner_for_input)
+        response = answer_question(self.history, self.suspicions, qi, model, pi)
+        self.tell(questioner.name+" asked you: "+msg)
+        self.tell("You responded: "+response)
+        questioner.tell(self.name+" responded: "+response)
+        return response
     
     def nominate_someone_or_not(self,can_be_nominated, g):
         pi = PlayerInfo(self.name, self.alignment.name, self.role.name)
@@ -420,8 +436,9 @@ def do_day(g, num_conversations):
     for i in range(num_conversations):
         for p in g.getplayers():
             p.tell("Choose a player to talk to")
-            choice, msg = p.choose_player_to_talk_to(g)
-            if not choice == None: choice.tell(msg)
+            choice, msg, questioner = p.ask_private_question(g)
+            if not choice == None:
+                choice.respond_privately(msg,questioner)
             
 
 
