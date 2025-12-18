@@ -207,16 +207,16 @@ def use_llm(system_prompt: str, first_prompt: str, second_prompt: str, player_in
         identify_a,
         {"role": "user", "content": first_prompt}
     ]
-    response = model.create_chat_completion(messages=message_template, temperature=0.1)
+    response = model.create_chat_completion(messages=message_template, temperature=0.1, max_tokens=200)
     print(response["choices"][0]["message"]["content"])
 
     message_template.append({"role": "assistant", "content": response["choices"][0]["message"]["content"]})
     message_template.append({"role": "user", "content": second_prompt})
 
     if output_format != None:
-        response2 = model.create_chat_completion(messages=message_template, response_format={"type": "json_object", "schema": output_format}, temperature=0.1)
+        response2 = model.create_chat_completion(messages=message_template, response_format={"type": "json_object", "schema": output_format}, temperature=0.1, max_tokens=200)
     else:
-        response2 = model.create_chat_completion(messages=message_template, temperature=0.1)
+        response2 = model.create_chat_completion(messages=message_template, temperature=0.1, max_tokens=200)
 
     print(response2["choices"][0]["message"]["content"])
     return response, response2
