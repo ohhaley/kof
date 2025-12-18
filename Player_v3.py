@@ -2,7 +2,7 @@ from llama_cpp import Llama
 from pydantic import BaseModel
 
 # gemma-3-4b-it-Q4_0.gguf
-llm = Llama(model_path=r"Qwen3-4b-Instruct.gguf", n_gpu_layers=-1, verbose=False, logits_all=False, n_ctx=4096)
+llm = Llama(model_path=r"Qwen3-4b-Instruct.gguf", n_gpu_layers=-1, verbose=False, logits_all=False, n_ctx=2048)
 
 def get_model(context_window = 2048):
     llm = Llama(model_path=r"Qwen3-4b-Instruct.gguf", n_gpu_layers=-1, verbose=False, n_ctx=context_window, mirostat_mode=2)
@@ -33,6 +33,9 @@ class PlayerList(BaseModel):
     players: list[Player]
 
     def get_players(self): return self.players
+
+class Vote(BaseModel):
+    did_vote: bool
 
 class Question(BaseModel):
     target: Player
@@ -121,20 +124,20 @@ def nominate_player(history: list[str], suspicions: PlayerList, model: Llama, pl
     return response2["choices"][0]["message"]["content"]
 
 # Given a history of information and suspicions, the model has to decide if there is a nominee they are willing to vote for.
-def vote_player(history: list[str], suspicions: PlayerList, nominees: PlayerList, model: Llama, player_info):
+def vote_player(history: list[str], suspicions: PlayerList, nominee: Player, model: Llama, player_info):
     hist = combine_history(history)
 
     system_prompt = f"You are playing a social deduction game where your goal is to decide if you should vote a player for elimination." \
                     "You are player {player_info.name}, you are {player_info.alignment}, your role is the {player_info.role}." \
-                    "Given all information currently available to you and a list of player suspicions you have previously constructed, decide if there are any players that are suspicious enough for you to vote for from the list of nominees."
+                    "Given all information currently available to you and a list of player suspicions you have previously constructed, decide if the nominee is suspicious enough to vote for."
 
     suspicions_list = get_suspicion_list(suspicions)
-    nominees_list = get_suspicion_list(nominees)
+    nominees_list = get_suspicion_list(PlayerList(players = [nominee]))
 
-    first_prompt = f"Analyze the following information and existing suspicions and decide if there is a suitable candidate to vote for from the nominees, there may not be one:\nInformation:\n{hist}\nSuspicions:\n{suspicions_list}\nNominees:\n{nominees_list}"
-    second_prompt = "From your reasoning, if there is a player that should be voted for, return them, otherwise return nothing."
+    first_prompt = f"Analyze the following information and existing suspicions and decide whether or not to vote for the nominee:\nInformation:\n{hist}\nSuspicions:\n{suspicions_list}\nNominee:\n{nominees_list}"
+    second_prompt = "From your reasoning, if you decide to vote for the nominee return True, otherwise return False."
 
-    response, response2 = use_llm(system_prompt=system_prompt, first_prompt=first_prompt, second_prompt=second_prompt, player_info=player_info, model=model, output_format=Player.model_json_schema())
+    response, response2 = use_llm(system_prompt=system_prompt, first_prompt=first_prompt, second_prompt=second_prompt, player_info=player_info, model=model, output_format=Vote.model_json_schema())
 
     return response2["choices"][0]["message"]["content"]
 
@@ -177,69 +180,69 @@ def use_llm(system_prompt: str, first_prompt: str, second_prompt: str, player_in
     print(response2["choices"][0]["message"]["content"])
     return response, response2
 
-# An example history of information that should clear Green and place suspicion on Red and Yellow
-example_history = ["Green says Green is the investigator",
-                   "Green says Green investigated Purple and Purple is the townsfolk.",
-                   "Blue says Blue is the chef.",
-                   "Red says Red is the doctor.",
-                   "Yellow says Yellow is the doctor."]
+# # An example history of information that should clear Green and place suspicion on Red and Yellow
+# example_history = ["Green says Green is the investigator",
+#                    "Green says Green investigated Purple and Purple is the townsfolk.",
+#                    "Blue says Blue is the chef.",
+#                    "Red says Red is the doctor.",
+#                    "Yellow says Yellow is the doctor."]
 
-# Use something like this at the start of the game
-starting_playerlist = PlayerList(players=[Player(name="Green", suspicion=0.0),
-                                          Player(name="Blue", suspicion=0.0),
-                                          Player(name="Red", suspicion=0.0),
-                                          Player(name="Yellow", suspicion=0.0)])
+# # Use something like this at the start of the game
+# starting_playerlist = PlayerList(players=[Player(name="Green", suspicion=0.0),
+#                                           Player(name="Blue", suspicion=0.0),
+#                                           Player(name="Red", suspicion=0.0),
+#                                           Player(name="Yellow", suspicion=0.0)])
 
-# Offers two equally suspicious players
-example_suspicions1 = PlayerList(players=[Player(name="Green", suspicion=0.0),
-                                          Player(name="Blue", suspicion=0.0),
-                                          Player(name="Red", suspicion=0.7),
-                                          Player(name="Yellow", suspicion=0.7)])
+# # Offers two equally suspicious players
+# example_suspicions1 = PlayerList(players=[Player(name="Green", suspicion=0.0),
+#                                           Player(name="Blue", suspicion=0.0),
+#                                           Player(name="Red", suspicion=0.7),
+#                                           Player(name="Yellow", suspicion=0.7)])
 
-# Offers no suspicious players
-example_suspicions2 = PlayerList(players=[Player(name="Green", suspicion=0.0),
-                                          Player(name="Blue", suspicion=0.0),
-                                          Player(name="Red", suspicion=0.0),
-                                          Player(name="Yellow", suspicion=0.0)])
+# # Offers no suspicious players
+# example_suspicions2 = PlayerList(players=[Player(name="Green", suspicion=0.0),
+#                                           Player(name="Blue", suspicion=0.0),
+#                                           Player(name="Red", suspicion=0.0),
+#                                           Player(name="Yellow", suspicion=0.0)])
 
-# Offers multiple slightly suspicious players
-example_suspicions3 = PlayerList(players=[Player(name="Green", suspicion=0.0),
-                                          Player(name="Blue", suspicion=0.1),
-                                          Player(name="Red", suspicion=0.2),
-                                          Player(name="Yellow", suspicion=0.2)])
+# # Offers multiple slightly suspicious players
+# example_suspicions3 = PlayerList(players=[Player(name="Green", suspicion=0.0),
+#                                           Player(name="Blue", suspicion=0.1),
+#                                           Player(name="Red", suspicion=0.2),
+#                                           Player(name="Yellow", suspicion=0.2)])
 
-# Meant for use with example_suspicions1
-example_nominees1 = PlayerList(players=[Player(name="Red", suspicion=0.7),
-                                        Player(name="Yellow", suspicion=0.7)])
+# # Meant for use with example_suspicions1
+# example_nominees1 = PlayerList(players=[Player(name="Red", suspicion=0.7),
+#                                         Player(name="Yellow", suspicion=0.7)])
 
-asker1 = Player(name="Green", suspicion=0.0)
-asker2 = Player(name="Red", suspicion=0.7)
+# asker1 = Player(name="Green", suspicion=0.0)
+# asker2 = Player(name="Red", suspicion=0.7)
 
-example_question1 = QuestionData(Player(name="Purple", suspicion=0.0), "What role are you?", asker1)
-example_question2 = QuestionData(Player(name="Purple", suspicion=0.0), "What role are you?", asker2)
+# example_question1 = QuestionData(Player(name="Purple", suspicion=0.0), "What role are you?", asker1)
+# example_question2 = QuestionData(Player(name="Purple", suspicion=0.0), "What role are you?", asker2)
 
-example_question3 = QuestionData(Player(name="Purple", suspicion=0.0), "Who are you suspicious of?", asker1)
-example_question4 = QuestionData(Player(name="Purple", suspicion=0.0), "Who are you suspicious of?", asker2)
+# example_question3 = QuestionData(Player(name="Purple", suspicion=0.0), "Who are you suspicious of?", asker1)
+# example_question4 = QuestionData(Player(name="Purple", suspicion=0.0), "Who are you suspicious of?", asker2)
 
-example_question5 = QuestionData(Player(name="Purple", suspicion=0.0), "Do you trust me?", asker1)
-example_question6 = QuestionData(Player(name="Purple", suspicion=0.0), "Do you trust me?", asker2)
+# example_question5 = QuestionData(Player(name="Purple", suspicion=0.0), "Do you trust me?", asker1)
+# example_question6 = QuestionData(Player(name="Purple", suspicion=0.0), "Do you trust me?", asker2)
 
 
 
-self_info = PlayerInfo("Purple", "Good", "Townsfolk")
-build_suspicions(example_history, starting_playerlist, llm, self_info)
-# nominate_player(example_history, example_suspicions3, llm, self_info)
+# self_info = PlayerInfo("Purple", "Good", "Townsfolk")
+# build_suspicions(example_history, starting_playerlist, llm, self_info)
+# # nominate_player(example_history, example_suspicions3, llm, self_info)
 
-# vote_player(example_history, example_suspicions1, example_nominees1, llm, self_info)
+# # vote_player(example_history, example_suspicions1, example_nominees1, llm, self_info)
 
-# request_information(example_history, example_suspicions1, llm, self_info)
+# # request_information(example_history, example_suspicions1, llm, self_info)
 
-# answer_question(example_history, example_suspicions1, example_question1, llm, self_info)
-# answer_question(example_history, example_suspicions1, example_question2, llm, self_info)
-# answer_question(example_history, example_suspicions1, example_question3, llm, self_info)
-# answer_question(example_history, example_suspicions1, example_question4, llm, self_info)
-# answer_question(example_history, example_suspicions1, example_question5, llm, self_info)
-# answer_question(example_history, example_suspicions1, example_question6, llm, self_info)
+# # answer_question(example_history, example_suspicions1, example_question1, llm, self_info)
+# # answer_question(example_history, example_suspicions1, example_question2, llm, self_info)
+# # answer_question(example_history, example_suspicions1, example_question3, llm, self_info)
+# # answer_question(example_history, example_suspicions1, example_question4, llm, self_info)
+# # answer_question(example_history, example_suspicions1, example_question5, llm, self_info)
+# # answer_question(example_history, example_suspicions1, example_question6, llm, self_info)
 
-# make sure the llm knows who they actually are
-# clarify that suspicion is how suspicious the llm is of them, not how suspicious the player is feeling
+# # make sure the llm knows who they actually are
+# # clarify that suspicion is how suspicious the llm is of them, not how suspicious the player is feeling

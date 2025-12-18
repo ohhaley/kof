@@ -4,8 +4,8 @@ import json
 # To enable LLM functionality in this file: uncomment the next two lines, as well as the last line of code in this program.
 # You ALSO have to comment out all of the code that isn't in a class/function in Player_v2.
 # If you don't do that, Python will run that code and give an error.
-#from Player_v2 import build_suspicions, PlayerInfo, get_model, PlayerList, choose_players
-#from Player_v2 import Player as NewPlayer
+# from Player_v2 import build_suspicions, PlayerInfo, get_model, PlayerList, choose_players, nominate_player, vote_player
+# from Player_v2 import Player as NewPlayer
 
 #Class representing a given game
 class Game:
@@ -102,22 +102,39 @@ class Player:
         msg = f"{self.name} tells you: Hi! I am the {self.role.name}"
         return msg
     
-    def nominate_someone_or_not(self,can_be_nominated):
-        #maybe you don't want to nom
-        if random.random() > 0.5:
-            self.tell("I did not nominate anyone")
+    def nominate_someone_or_not(self,can_be_nominated, g):
+        model = get_model()
+        pi = PlayerInfo(self.name, self.alignment.name, self.role.name)
+        player_json = nominate_player(self.history, self.suspicions, model, pi)
+        player_dict = json.loads(player_json)
+        choice = None
+        for player in g.getplayers():
+            if player.name == player_dict['name']:
+                choice = player
+        if not choice == None and choice in can_be_nominated:
+            self.tell(f"I nominated {choice.name}")
+            return choice
+        else:
+            self.tell("I did not nominate")
             return None
-        choice = random.choice(can_be_nominated)
-        self.tell(f"I nominated {choice.name}")
-        return choice
+        
     
     def getvote(self,nominee,butler_master_voted=False):
         if self.role == Role.BUTLER and butler_master_voted == False:
             self.tell("I could not vote because I am the BUTLER")
             return False
-        #if self.role == Role.BUTLER: print("\n\n\n\n\n\n\n\n********HOLD THE PHONE I GOT TO VOTE EVEN THOUGH I'M THE BUTLER**********\n\n\n\n\n\n\n")
-        if random.random() > 0.5:
-            #vote
+
+        model = get_model()
+        suspicion_of_nominee = 0
+        for p in self.suspicions.players:
+            if p.name == nominee.name:
+                suspicion_of_nominee = p.suspicion
+        nominated = NewPlayer(name = nominee.name, suspicion = suspicion_of_nominee)
+        pi = PlayerInfo(self.name, self.alignment, self.role.name)
+        vote_json = vote_player(self.history, self.suspicions, nominated, model, pi)
+        vote_dict = json.loads(vote_json)
+        vote = vote_dict["did_vote"]
+        if vote:
             self.tell(f"I voted for {nominee.name}")
             if not self.alive: self.canvote = False
             return True
@@ -428,7 +445,7 @@ def do_evening(g):
     on_the_block = None
     for player in can_nominate:
         player.tell("Would you like to nominate someone? If so, who?")
-        nominee = player.nominate_someone_or_not(can_be_nominated)
+        nominee = player.nominate_someone_or_not(can_be_nominated, g)
         if not nominee == None:
             can_be_nominated.remove(nominee)
             total_votes = 0
@@ -1080,5 +1097,5 @@ start_game(g)
 
 g.printgameinfo()
 
-#g.getplayers()[0].updatesuspicions()
+# g.getplayers()[0].updatesuspicions()
 #^^this should work.
