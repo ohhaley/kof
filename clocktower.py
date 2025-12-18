@@ -1,5 +1,6 @@
 import random
 from enum import Enum
+import json
 # To enable LLM functionality in this file: uncomment the next two lines, as well as the last line of code in this program.
 # You ALSO have to comment out all of the code that isn't in a class/function in Player_v2.
 # If you don't do that, Python will run that code and give an error.
@@ -61,6 +62,7 @@ class Player:
         self.tokens = tokens
         self.history = history
         self.name = name
+        self.suspicions = []
     
     #Adds a message to player's message history
     def tell(self,msg):
@@ -115,14 +117,24 @@ class Player:
             self.tell("I did not vote")
             return False
         
-    def buildsuspicions(self,g):
+    def startsuspicions(self, g):
         all_players = []
         for player in g.getplayers():
-            all_players.append(NewPlayer(name=player.name,suspicion = 0.0))
+            all_players.append(NewPlayer(name=player.name, suspicion = 0.0))
         suspicions = PlayerList(players = all_players)
+        self.suspicions = suspicions
+        
+    def updatesuspicions(self):
         model = get_model()
         pi = PlayerInfo(self.name,self.alignment.name,self.role.name)
-        build_suspicions(self.history,suspicions,model,pi)
+        suspicions_json = build_suspicions(self.history,self.suspicions,model,pi)
+        suspicions_dict = json.loads(suspicions_json)
+        new_suspicions = []
+        for val in suspicions_dict.values():
+            for item in val:
+                new_suspicions.append(NewPlayer(name = item['name'], suspicion = item['suspicion']))
+        
+        self.suspicions = PlayerList(new_suspicions)
 
 class GamePhase(Enum):
     NIGHT = 1
@@ -349,6 +361,9 @@ bluffs = random.sample(all_roles,3)
 
 #make the Game object
 g = Game(players,0,GamePhase.EVENING,bluffs)
+
+for p in g.getplayers():
+    p.startsuspicions(g)
 
 def do_day(g, num_conversations):
     players = g.getplayers()
@@ -1056,5 +1071,5 @@ start_game(g)
 
 g.printgameinfo()
 
-#g.getplayers()[0].buildsuspicions(g)
+#g.getplayers()[0].updatesuspicions()
 #^^this should work.
