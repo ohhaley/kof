@@ -150,7 +150,7 @@ def choose_players(history: list[str], suspicions: PlayerList, model: Llama, pla
     first_prompt = f"Analyze the following information and existing suspicions and decide the {num} players to choose for your ability: \nInformation:\n{hist}\nSuspicions: \n{suspicions_list}"
     second_prompt = f"From your reasoning, give a list of the {num} players to choose for your ability. There must be {num} of them in the list."
     response, response2 = use_llm(system_prompt=system_prompt, first_prompt=first_prompt, second_prompt=second_prompt, player_info=player_info, model=model, output_format=PlayerList.model_json_schema())
-    return response2
+    return response2["choices"][0]["message"]["content"]
 
 # All LLM calls go through here.
 # The LLM will think using the initial message_template before being called again with their reasoning and the second prompt to give a structured format if asked for. Leave blank if no special output format is needed.

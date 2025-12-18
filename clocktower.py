@@ -4,7 +4,7 @@ import json
 # To enable LLM functionality in this file: uncomment the next two lines, as well as the last line of code in this program.
 # You ALSO have to comment out all of the code that isn't in a class/function in Player_v2.
 # If you don't do that, Python will run that code and give an error.
-#from Player_v2 import build_suspicions, PlayerInfo, get_model, PlayerList
+#from Player_v2 import build_suspicions, PlayerInfo, get_model, PlayerList, choose_players
 #from Player_v2 import Player as NewPlayer
 
 #Class representing a given game
@@ -71,7 +71,16 @@ class Player:
     #Use this function to allow a player to choose X players for their ability.
     #This is probably one of the function we'll edit the most for our project
     def choose_players_for_ability(self,g,num):
-        choices = random.sample(g.getplayers(),num)
+        model = get_model()
+        pi = PlayerInfo(self.name,self.alignment.name,self.role.name)
+        choices_json = choose_players(self.history, self.suspicions, model, pi, num)
+        choices_dict = json.loads(choices_json)
+        choices = []
+        for val in choices_dict.values():
+            for p in val:
+                for player in g.getplayers():
+                    if p['name'] == player.name:
+                        choices.append(player)
         for choice in choices:
             self.tell(f"I chose {choice.name} for my ability")
         return choices
