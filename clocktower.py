@@ -52,6 +52,13 @@ class Game:
                 player.tell("It is now Round "+str(self.num_days))
                 player.tell("It is now NIGHT")
 
+    def realsuspicions(self):
+        susses = []
+        players = self.getplayers()
+        for p in players:
+            if p.alignment == Alignment.GOOD: susses.append([p,0.0])
+            else: susses.append([p,1.0])
+
 
 #Class representing a player
 class Player:
@@ -85,6 +92,11 @@ class Player:
                         choices.append(player)
         for choice in choices:
             self.tell(f"I chose {choice.name} for my ability")
+        with open("finetune.csv","a") as f:
+            f.write("[[::]]")
+            self.suspicions
+            g.realsuspicions()
+            #f.write([euclidean dist]+"\n")
         return choices
     
     # function to allow player to choose a player to talk to

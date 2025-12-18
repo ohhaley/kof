@@ -224,10 +224,7 @@ def use_llm(system_prompt: str, first_prompt: str, second_prompt: str, player_in
     print(response2["choices"][0]["message"]["content"])
     with open("finetune.csv","a") as f:
         f.write("[[::]]")
-        f.write(str(response2["choices"][0]["message"]["content"]).replace('\n', '')+"\n")
-
-    #calculate loss
-    
+        f.write(str(response2["choices"][0]["message"]["content"]).replace('\n', ''))
     return response, response2
 
 # # An example history of information that should clear Green and place suspicion on Red and Yellow
