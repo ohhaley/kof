@@ -82,6 +82,16 @@ class Player:
     def tell(self,msg):
         self.history.append(msg)
 
+    def find_sus_err(self,g):
+        self_suspicions = []
+        for p in self.suspicions.players:
+            self_suspicions.append(p.suspicion)
+        real_suspicions = [] 
+        for p in g.realsuspicions():
+            real_suspicions.append(p[1])
+        euclidean_dist = math.dist(self_suspicions, real_suspicions)
+        return euclidean_dist
+
     #Use this function to allow a player to choose X players for their ability.
     #This is probably one of the function we'll edit the most for our project
     def choose_players_for_ability(self,g,num):
@@ -98,13 +108,7 @@ class Player:
             self.tell(f"I chose {choice.name} for my ability")
         with open("finetune.csv","a") as f:
             f.write("[[::]]")
-            self_suspicions = []
-            for p in self.suspicions.players:
-                self_suspicions.append(p.suspicion)
-            real_suspicions = [] 
-            for p in g.realsuspicions():
-                real_suspicions.append(p[1])
-            euclidean_dist = math.dist(self_suspicions, real_suspicions)
+            euclidean_dist = self.find_sus_err(g)
             f.write(f"{euclidean_dist}\n")
         return choices
     
@@ -116,18 +120,26 @@ class Player:
         self.tell("You asked "+question["target"]["name"]+": "+question["question"])
         for p in g.getplayers():
             if p.name == question["target"]["name"]: return p, question["question"], self
+        with open("finetune.csv","a") as f:
+            f.write("[[::]]")
+            euclidean_dist = self.find_sus_err(g)
+            f.write(f"{euclidean_dist}\n")
         return None, question["question"]
         #players = g.getplayers()
         #possible_choices = [player for player in players if player.seat != self.seat]
         #choice = random.choice(possible_choices)
         #return choice
 
-    def say_publicly(self):
+    def say_publicly(self,g):
         pi = PlayerInfo(self.name, self.alignment.name, self.role.name)
         msg = talk_publicly(self.history, self.suspicions, model, pi)
+        with open("finetune.csv","a") as f:
+            f.write("[[::]]")
+            euclidean_dist = self.find_sus_err(g)
+            f.write(f"{euclidean_dist}\n")
         return msg
 
-    def respond_privately(self, msg, questioner):
+    def respond_privately(self, msg, questioner,g):
         pi = PlayerInfo(self.name,self.alignment.name,self.role.name)
         target_sus = 0
         questioner_sus = 0
@@ -144,6 +156,10 @@ class Player:
         self.tell(questioner.name+" asked you: "+msg)
         self.tell("You responded: "+response)
         questioner.tell(self.name+" responded: "+response)
+        with open("finetune.csv","a") as f:
+            f.write("[[::]]")
+            euclidean_dist = self.find_sus_err(g)
+            f.write(f"{euclidean_dist}\n")
         return response
     
     def nominate_someone_or_not(self,can_be_nominated, g):
@@ -154,6 +170,10 @@ class Player:
         for player in g.getplayers():
             if player.name == player_dict['name']:
                 choice = player
+        with open("finetune.csv","a") as f:
+            f.write("[[::]]")
+            euclidean_dist = self.find_sus_err(g)
+            f.write(f"{euclidean_dist}\n")
         if not choice == None and choice in can_be_nominated:
             self.tell(f"I nominated {choice.name}")
             return choice
@@ -162,7 +182,7 @@ class Player:
             return None
         
     
-    def getvote(self,nominee,butler_master_voted=False):
+    def getvote(self,nominee,g,butler_master_voted=False):
         if self.role == Role.BUTLER and butler_master_voted == False:
             self.tell("I could not vote because I am the BUTLER")
             return False
@@ -176,6 +196,10 @@ class Player:
         vote_json = vote_player(self.history, self.suspicions, nominated, model, pi)
         vote_dict = json.loads(vote_json)
         vote = vote_dict["did_vote"]
+        with open("finetune.csv","a") as f:
+            f.write("[[::]]")
+            euclidean_dist = self.find_sus_err(g)
+            f.write(f"{euclidean_dist}\n")
         if vote:
             self.tell(f"I voted for {nominee.name}")
             if not self.alive: self.canvote = False
@@ -192,7 +216,7 @@ class Player:
         suspicions = PlayerList(players = all_players)
         self.suspicions = suspicions
         
-    def updatesuspicions(self):
+    def updatesuspicions(self,g):
         pi = PlayerInfo(self.name,self.alignment.name,self.role.name)
         suspicions_json = build_suspicions(self.history,self.suspicions,model,pi)
         suspicions_dict = json.loads(suspicions_json)
@@ -202,6 +226,10 @@ class Player:
                 new_suspicions.append(NewPlayer(name = item['name'], suspicion = item['suspicion']))
         sorted_suspicions = sorted(new_suspicions, key=lambda player: player.name)
         self.suspicions = PlayerList(players = sorted_suspicions)
+        with open("finetune.csv","a") as f:
+            f.write("[[::]]")
+            euclidean_dist = self.find_sus_err(g)
+            f.write(f"{euclidean_dist}\n")
 
 class GamePhase(Enum):
     NIGHT = 1
@@ -465,7 +493,7 @@ def do_day(g, num_conversations):
             p.tell("Choose a player to talk to")
             choice, msg, questioner = p.ask_private_question(g)
             if not choice == None:
-                choice.respond_privately(msg,questioner)
+                choice.respond_privately(msg,questioner,g)
             
 
 
@@ -479,7 +507,7 @@ def do_evening(g):
         p.tell("Public discussion starts")
     for i in range(0,num_speech_turns):
         for p in players:
-            msg = p.say_publicly()
+            msg = p.say_publicly(g)
             if msg!="":
                 for q in players: q.tell(f"{p.name} says publicly: {msg}")    
 
@@ -525,7 +553,7 @@ def do_evening(g):
                     #print(p.seat,p.role.name,p.alive,p.canvote)
                     p.tell(f"{player.name} has nominated {nominee.name}")
                     p.tell("Total votes right now: "+str(total_votes)+", total needed: "+str(votes_to_die))
-                    didvote = p.getvote(nominee,butler_master_voted=butler_master_voted)
+                    didvote = p.getvote(nominee,g,butler_master_voted=butler_master_voted)
                     if didvote:
                         total_votes = total_votes+1
                         if ReminderToken.BUTLER_MASTER in p.tokens: butler_master_voted = True
@@ -684,7 +712,7 @@ def start_game(g):
     first_night(g)
 
     for p in g.getplayers():
-        p.updatesuspicions()
+        p.updatesuspicions(g)
 
 
     g.incrementtime()
@@ -694,13 +722,13 @@ def start_game(g):
         #daytime happens, each player can tell something to three other players
         do_day(g, 3)
         for p in g.getplayers():
-            p.updatesuspicions()
+            p.updatesuspicions(g)
         g.incrementtime()
         #print(g.game_phase)
         # do evening
         executed_player = do_evening(g)
         for p in g.getplayers():
-            p.updatesuspicions()
+            p.updatesuspicions(g)
 
         # update alive players list
         for player in alive_players:
@@ -741,7 +769,7 @@ def start_game(g):
         # do next night
         other_nights(g)
         for p in g.getplayers():
-            p.updatesuspicions()
+            p.updatesuspicions(g)
         # update alive players list
         for player in alive_players:
             if not player.alive:
@@ -1227,5 +1255,5 @@ start_game(g)
 
 g.printgameinfo()
 
-g.getplayers()[0].updatesuspicions()
+g.getplayers()[0].updatesuspicions(g)
 #^^this should work.

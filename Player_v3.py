@@ -20,7 +20,8 @@ def get_model(context_window = 4096):
     model_path = hf_hub_download(repo_id=repo_id, filename=filename)
     llm = Llama(
         model_path=model_path,
-        n_ctx = context_window
+        n_ctx = context_window,
+        verbose=False
     )
     return llm
 
