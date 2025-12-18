@@ -1,2 +1,2 @@
-From home directory:
+From project directory:
 `source myenv/bin/activate`
