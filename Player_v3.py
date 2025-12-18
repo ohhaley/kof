@@ -175,7 +175,7 @@ def choose_players(history: list[str], suspicions: PlayerList, model: Llama, pla
     return response2["choices"][0]["message"]["content"]
 
 def talk_publicly(history: list[str], suspicions: PlayerList, model: Llama, player_info: PlayerInfo):
-    hist = combine_history(hist)
+    hist = combine_history(history)
 
     suspicions_list = get_suspicion_list(suspicions)
 

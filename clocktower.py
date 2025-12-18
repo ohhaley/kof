@@ -4,6 +4,7 @@ import json
 # To enable LLM functionality in this file: uncomment the next two lines, as well as the last line of code in this program.
 # You ALSO have to comment out all of the code that isn't in a class/function in Player_v2.
 # If you don't do that, Python will run that code and give an error.
+from Player_v3 import build_suspicions, PlayerInfo, get_model, PlayerList, choose_players, nominate_player, vote_player, request_information, talk_publicly
 from Player_v3 import build_suspicions, PlayerInfo, get_model, PlayerList, choose_players, nominate_player, vote_player, request_information, answer_question, Question, QuestionData
 from Player_v3 import Player as NewPlayer
 
@@ -101,10 +102,9 @@ class Player:
         #return choice
 
     def say_publicly(self):
-        msg = f"{self.name} says publicly: Hi! I am the "+self.role.name
-        if random.random()<0.2: return msg
-        else: return ""
-        #TODO
+        pi = PlayerInfo(self.name, self.alignment.name, self.role.name)
+        msg = talk_publicly(self.history, self.suspicions, model, pi)
+        return msg
 
     def respond_privately(self, msg, questioner):
         pi = PlayerInfo(self.name,self.alignment.name,self.role.name)
@@ -286,6 +286,12 @@ num_players_to_num_roles = {
         CharacterType.MINION: 1,
         CharacterType.DEMON: 1,
         },
+    8: {
+        CharacterType.TOWNSFOLK: 5,
+        CharacterType.OUTSIDER: 1,
+        CharacterType.MINION: 1,
+        CharacterType.DEMON: 1,
+    },
     }
 
 
@@ -294,8 +300,8 @@ num_players_to_num_roles = {
 
 
 
-#Set up grimoire for 7 players
-num_players = 7
+#Set up grimoire for 8 players
+num_players = 8
 
 players = {
     CharacterType.TOWNSFOLK: [],
@@ -454,7 +460,7 @@ def do_evening(g):
         for p in players:
             msg = p.say_publicly()
             if msg!="":
-                for q in players: q.tell(msg)    
+                for q in players: q.tell(f"{p.name} says publicly: {msg}")    
 
     #noms
     can_nominate = g.getplayers()
