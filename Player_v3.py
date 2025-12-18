@@ -159,8 +159,6 @@ def vote_player(history: list[str], suspicions: PlayerList, nominee: Player, mod
 def choose_players(history: list[str], suspicions: PlayerList, model: Llama, player_info: PlayerInfo, num):
     hist = combine_history(history)
 
-    with open("systemprompt.md", 'r') as f: game_info = f.read()
-
     if player_info.alignment == "GOOD":
         system_prompt = f"You are playing a social deduction game where your goal is to find evil players." \
                         "You are player {player_info.name}, you are {player_info.alignment}, your role is the {player_info.role}." \
@@ -169,7 +167,6 @@ def choose_players(history: list[str], suspicions: PlayerList, model: Llama, pla
         system_prompt = f"You are playing a social deduction game where your goal is to pretend to be a good character, eliminate good players, and keep the demon alive." \
                         "You are player {player_info.name}, you are {player_info.alignment}, your role is the {player_info.role}." \
                         "Given all information currently available to you and a list of player suspicions you have previously constructed, decide what players to choose for your ability."
-    system_prompt = game_info+"\n"+system_prompt
     suspicions_list = get_suspicion_list(suspicions)
     
     first_prompt = f"Analyze the following information and existing suspicions and decide the {num} players to choose for your ability: \nInformation:\n{hist}\nSuspicions: \n{suspicions_list}"
@@ -198,8 +195,10 @@ def talk_publicly(history: list[str], suspicions: PlayerList, model: Llama, play
 
 # All LLM calls go through here.
 # The LLM will think using the initial message_template before being called again with their reasoning and the second prompt to give a structured format if asked for. Leave blank if no special output format is needed.
-def use_llm(system_prompt: str, first_prompt: str, second_prompt: str, player_info: PlayerInfo, model: Llama, output_format=None):
+def use_llm(system_prompt: str, first_prompt: str, second_prompt: str, player_info: PlayerInfo, model: Llama, output_format=None, max_tokens = 100):
     identify_q, identify_a = identify_self(player_info)
+    with open("systemprompt.md", 'r') as f: game_info = f.read()
+    system_prompt = game_info+"\n"+system_prompt
 
     message_template = [
         {"role": "system", "content": system_prompt},
@@ -207,18 +206,28 @@ def use_llm(system_prompt: str, first_prompt: str, second_prompt: str, player_in
         identify_a,
         {"role": "user", "content": first_prompt}
     ]
-    response = model.create_chat_completion(messages=message_template, temperature=0.1, max_tokens=200)
+    response = model.create_chat_completion(messages=message_template, temperature=0.1, max_tokens=max_tokens)
     print(response["choices"][0]["message"]["content"])
+    with open("finetune.csv","a") as f:
+        f.write(str(message_template).replace('\n', ''))
+        f.write("[[::]]")
+        f.write(response["choices"][0]["message"]["content"].replace('\n', ''))
 
     message_template.append({"role": "assistant", "content": response["choices"][0]["message"]["content"]})
     message_template.append({"role": "user", "content": second_prompt})
 
     if output_format != None:
-        response2 = model.create_chat_completion(messages=message_template, response_format={"type": "json_object", "schema": output_format}, temperature=0.1, max_tokens=200)
+        response2 = model.create_chat_completion(messages=message_template, response_format={"type": "json_object", "schema": output_format}, temperature=0.1)
     else:
-        response2 = model.create_chat_completion(messages=message_template, temperature=0.1, max_tokens=200)
+        response2 = model.create_chat_completion(messages=message_template, temperature=0.1, max_tokens=max_tokens)
 
     print(response2["choices"][0]["message"]["content"])
+    with open("finetune.csv","a") as f:
+        f.write("[[::]]")
+        f.write(str(response2["choices"][0]["message"]["content"]).replace('\n', '')+"\n")
+
+    #calculate loss
+    
     return response, response2
 
 # # An example history of information that should clear Green and place suspicion on Red and Yellow

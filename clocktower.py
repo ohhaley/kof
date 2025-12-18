@@ -180,7 +180,7 @@ class Player:
             for item in val:
                 new_suspicions.append(NewPlayer(name = item['name'], suspicion = item['suspicion']))
         
-        self.suspicions = PlayerList(new_suspicions)
+        self.suspicions = PlayerList(players = new_suspicions)
 
 class GamePhase(Enum):
     NIGHT = 1
