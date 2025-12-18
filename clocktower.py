@@ -101,6 +101,7 @@ class Player:
         real_suspicions = [] 
         for p in g.realsuspicions():
             real_suspicions.append(p[1])
+        print(len(self_suspicions),len(real_suspicions),self_suspicions,real_suspicions)
         euclidean_dist = math.dist(self_suspicions, real_suspicions)
         return euclidean_dist
 
@@ -236,6 +237,7 @@ class Player:
                     all_players.append(NewPlayer(name=player.name, suspicion=0.0))
         suspicions = PlayerList(players = all_players)
         self.suspicions = suspicions
+        print(suspicions)
         
     def updatesuspicions(self,g):
         pi = PlayerInfo(self.name,self.alignment.name,self.role.name)

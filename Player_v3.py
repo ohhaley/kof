@@ -99,7 +99,7 @@ def build_suspicions(history: list[str], suspicions: PlayerList, model: Llama, p
     suspicions_list = get_suspicion_list(suspicions)
 
     first_prompt = f"Analyze the following information and provide your reasoning:\nInformation:\n{hist}\nPrevious probabilities that players are on the EVIL team:\n{suspicions_list}"
-    second_prompt = "From your reasoning, update the list of players to account for any change in how likely they are to be EVIL. List your expectation that players are EVIL as a value from 0.0 to 1.0, representing a percentage. 1.0 means a player is certainly EVIL; 0.0 means a player is certainly GOOD."
+    second_prompt = "From your reasoning, update the list of players to account for any change in how likely they are to be EVIL. List your expectation that players are EVIL as a floating point value between 0.0 and 1.0, representing a percentage. 1.0 means a player is certainly EVIL; 0.5 means a player could equally be GOOD or EVIL; 0.0 means a player is certainly GOOD."
 
     response, response2 = use_llm(system_prompt=system_prompt, first_prompt=first_prompt, second_prompt=second_prompt, player_info=player_info, model=model, output_format=PlayerList.model_json_schema())
     return response2["choices"][0]["message"]["content"]
@@ -220,7 +220,7 @@ def talk_publicly(history: list[str], suspicions: PlayerList, model: Llama, play
 
 # All LLM calls go through here.
 # The LLM will think using the initial message_template before being called again with their reasoning and the second prompt to give a structured format if asked for. Leave blank if no special output format is needed.
-def use_llm(system_prompt: str, first_prompt: str, second_prompt: str, player_info: PlayerInfo, model: Llama, output_format=None, max_tokens = 100):
+def use_llm(system_prompt: str, first_prompt: str, second_prompt: str, player_info: PlayerInfo, model: Llama, output_format=None, max_tokens = 200):
     identify_q, identify_a = identify_self(player_info)
     with open("systemprompt.md", 'r') as f: game_info = f.read()
     system_prompt = game_info+"\n"+system_prompt
