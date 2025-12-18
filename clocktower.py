@@ -656,6 +656,8 @@ def start_game(g):
     print(g.printgameinfo())
     alive_players = g.getplayers()
     game_over = False
+    mayor_win = False
+    saint_loss = False
 
     # do the first night
     first_night(g)
@@ -671,13 +673,24 @@ def start_game(g):
         #print(g.game_phase)
         # do evening
         executed_player = do_evening(g)
-        if executed_player.role == Role.SAINT and ReminderToken.POISONER_IS_POISONED not in executed_player.tokens:
-            game_over = True
-            break
+        
+
         # update alive players list
         for player in alive_players:
             if not player.alive:
                 alive_players.remove(player)
+
+        if executed_player.role == Role.SAINT and ReminderToken.POISONER_IS_POISONED not in executed_player.tokens:
+            saint_loss = True
+            game_over = True
+            break
+        if executed_player == None and len(alive_players) == 3:
+            for p in alive_players:
+                if p.role == Role.MAYOR and ReminderToken.DRUNK_IS_THE_DRUNK not in p.tokens and ReminderToken.POISONER_IS_POISONED not in p.tokens:
+                    mayor_win = True
+                    game_over = True
+            if game_over:
+                break
 
         if g.num_days > 100:
             break
@@ -721,17 +734,25 @@ def start_game(g):
 
         g.incrementtime()
 
-    # game is over 
-    good_wins = True
-    for p in g.getplayers():
-        if p.role == Role.IMP and p.alive:
-            good_wins = False
-    
-    for p in g.getplayers():
-        if good_wins:
+    # game is over
+    if mayor_win:
+        for p in g.getplayers():
             p.tell("The good team has won.")
-        else:
+    elif saint_loss:
+        for p in g.getplayers():
             p.tell("The evil team has won.")
+    else:
+        good_wins = True
+        for p in g.getplayers():
+            if p.role == Role.IMP and p.alive:
+                
+                good_wins = False
+        
+        for p in g.getplayers():
+            if good_wins:
+                p.tell("The good team has won.")
+            else:
+                p.tell("The evil team has won.")
         
 
 
@@ -1037,11 +1058,29 @@ def imp(g):
             choice = p.choose_players_for_ability(g, 1)
             if ReminderToken.POISONER_IS_POISONED not in p.tokens:
                 if ReminderToken.MONK_SAFE_TONIGHT not in choice[0].tokens:
-                    if ReminderToken.SOLDIER_SAFE not in choice[0].tokens or ReminderToken.POISONER_IS_POISONED in choice[0].tokens:
+                    if ReminderToken.POISONER_IS_POISONED in choice[0].tokens or (ReminderToken.SOLDIER_SAFE not in choice[0].tokens and choice[0].role != Role.MAYOR): 
                         choice[0].tokens.append(ReminderToken.IMP_WILL_DIE_TONIGHT)
                         choice[0].alive = False
+                        if choice[0].role == Role.RAVENKEEPER:
+                            choice[0].tokens.append(ReminderToken.RAVENKEEPER_DIED_TONIGHT)
                         if choice[0].seat == p.seat:
                             star_pass(g)
+                    else:
+                        if choice[0].role == Role.MAYOR:
+                            good_players = []
+                            for pl in g.getplayers():
+                                if pl.alignment == Alignment.GOOD and pl.role != Role.MAYOR and pl.alive:
+                                    good_players.append(pl)
+                            if random.random() < 0.5:
+                                bounce = random.choice(good_players)
+                                bounce.tokens.append(ReminderToken.IMP_WILL_DIE_TONGIHT)
+                                bounce.alive = False
+                                if bounce.role == Role.RAVENKEEPER:
+                                    bounce.tokens.append(ReminderToken.RAVENKEEPER_DIED_TONIGHT)
+                            else:
+                                choice[0].tokens.append(ReminderToken.IMP_WILL_DIE_TONIGHT)
+                                choice[0].alive = False
+
 
 
 # ravenkeeper goes
