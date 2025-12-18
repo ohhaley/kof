@@ -2,9 +2,9 @@ from llama_cpp import Llama
 from pydantic import BaseModel
 
 # gemma-3-4b-it-Q4_0.gguf
-llm = Llama(model_path=r"Qwen3-4b-Instruct.gguf", n_gpu_layers=-1, verbose=False, logits_all=False, n_ctx=2048)
+llm = Llama(model_path=r"Qwen3-4b-Instruct.gguf", n_gpu_layers=-1, verbose=False, logits_all=False, n_ctx=4096)
 
-def get_model(context_window = 2048):
+def get_model(context_window = 4096):
     llm = Llama(model_path=r"Qwen3-4b-Instruct.gguf", n_gpu_layers=-1, verbose=False, n_ctx=context_window, mirostat_mode=2)
     return llm
 
@@ -81,11 +81,15 @@ def build_suspicions(history: list[str], suspicions: PlayerList, model: Llama, p
 
 def request_information(history: list[str], suspicions: PlayerList, model: Llama, player_info: PlayerInfo):
     hist = combine_history(history)
-
-    system_prompt = f"You are playing a social deduction game where your goal is to find evil players." \
-                    "You are player {player_info.name}, you are {player_info.alignment}, your role is the {player_info.role}." \
-                    "Given a list of information and suspicions of players, decide whether to ask another player for more information, and if so, what question to ask."
-
+    if player_info.alignment == "GOOD":
+        system_prompt = f"You are playing a social deduction game where your goal is to find evil players." \
+                        "You are player {player_info.name}, you are {player_info.alignment}, your role is the {player_info.role}." \
+                        "Given a list of information and suspicions of players, decide whether to ask another player for more information, and if so, what question to ask."
+    else:
+        system_prompt = f"You are playing a social deduction game where your goal is to pretend your role is a good character, eliminate good players and keep the demon alive." \
+                        "You are player {player_info.name}, you are {player_info.alignment}, your role is the {player_info.role}." \
+                        "Given a list of information and suspicions of players, decide whether to ask another player for more information, and if so, what question to ask."
+        
     suspicions_list = get_suspicion_list(suspicions)
     first_prompt = f"Analyze the following information and existing suspicions and decide if there is a player that could provide more information, and what question to ask:\nInformation:\n{hist}\nSuspicions:\n{suspicions_list}"
     second_prompt = "From your reasoning, if there is a question to ask, return which player to approach and what question to ask."
@@ -96,10 +100,15 @@ def request_information(history: list[str], suspicions: PlayerList, model: Llama
 def answer_question(history: list[str], suspicions: PlayerList, question_info: QuestionData, model: Llama, player_info: PlayerInfo):
     hist = combine_history(history)
 
-    system_prompt = f"You are playing a social deduction game where your goal is to find evil players." \
-                    "You are player {player_info.name}, you are {player_info.alignment}, your role is the {player_info.role}." \
-                    "You have been asked a question by a player. Given a list of information and suspicions of players, respond to the player." \
-                    "Consider based on suspicion if you should respond truthfully, lie, or refuse to answer."
+    if player_info.alignment == "GOOD":
+        system_prompt = f"You are playing a social deduction game where your goal is to find evil players." \
+                        "You are player {player_info.name}, you are {player_info.alignment}, your role is the {player_info.role}." \
+                        "You have been asked a question by a player. Given a list of information and suspicions of players, respond to the player." \
+                        "Consider based on suspicion if you should respond truthfully, lie, or refuse to answer."
+    else:
+        system_prompt = f"You are playing a social deduction game where your goal is to pretend to be a good character, eliminate good players, and keep the demon alive." \
+                        "You are player {player_info.name}, you are {player_info.alignment}, your role is the {player_info.role}." \
+                        "You have been asked a question by a player. Given a list of information and suspicions of players, respond to the player." \
 
     suspicions_list = get_suspicion_list(suspicions)
     
@@ -112,9 +121,15 @@ def answer_question(history: list[str], suspicions: PlayerList, question_info: Q
 def nominate_player(history: list[str], suspicions: PlayerList, model: Llama, player_info: PlayerInfo):
     hist = combine_history(history)
 
-    system_prompt = f"You are playing a social deduction game where your goal is to eliminate evil players." \
-                    "You are player {player_info.name}, you are {player_info.alignment}, your role is the {player_info.role}." \
-                    "Given all information currently available to you and a list of player suspicions you have previously constructed, decide if there are any players that are suspicious enough that they should be put up for a vote for elimination."
+    if player_info.alignment == "GOOD":
+        system_prompt = f"You are playing a social deduction game where your goal is to eliminate evil players." \
+                        "You are player {player_info.name}, you are {player_info.alignment}, your role is the {player_info.role}." \
+                        "Given all information currently available to you and a list of player suspicions you have previously constructed, decide if there are any players that are suspicious enough that they should be put up for a vote for elimination."
+    else:
+       system_prompt = f"You are playing a social deduction game where your goal is to eliminate evil players." \
+                        "You are player {player_info.name}, you are {player_info.alignment}, your role is the {player_info.role}." \
+                        "Given all information crrently available to you and a list of player suspicions you have previously constructed, decide if there are any players that should be put up for a vote for elimination."
+    
     
     suspicions_list = get_suspicion_list(suspicions)
     
@@ -126,7 +141,7 @@ def nominate_player(history: list[str], suspicions: PlayerList, model: Llama, pl
 # Given a history of information and suspicions, the model has to decide if there is a nominee they are willing to vote for.
 def vote_player(history: list[str], suspicions: PlayerList, nominee: Player, model: Llama, player_info):
     hist = combine_history(history)
-
+    
     system_prompt = f"You are playing a social deduction game where your goal is to decide if you should vote a player for elimination." \
                     "You are player {player_info.name}, you are {player_info.alignment}, your role is the {player_info.role}." \
                     "Given all information currently available to you and a list of player suspicions you have previously constructed, decide if the nominee is suspicious enough to vote for."
@@ -144,10 +159,14 @@ def vote_player(history: list[str], suspicions: PlayerList, nominee: Player, mod
 def choose_players(history: list[str], suspicions: PlayerList, model: Llama, player_info: PlayerInfo, num):
     hist = combine_history(history)
 
-    system_prompt = f"You are playing a social deduction game where your goal is to find evil players." \
-                    "You are player {player_info.name}, you are {player_info.alignment}, your role is the {player_info.role}." \
-                    "Given all information currently available to you and a list of player suspicions you have previously constructed, decide what players to choose for your ability."
-    
+    if player_info.alignment == "GOOD":
+        system_prompt = f"You are playing a social deduction game where your goal is to find evil players." \
+                        "You are player {player_info.name}, you are {player_info.alignment}, your role is the {player_info.role}." \
+                        "Given all information currently available to you and a list of player suspicions you have previously constructed, decide what players to choose for your ability."
+    else:
+        system_prompt = f"You are playing a social deduction game where your goal is to pretend to be a good character, eliminate good players, and keep the demon alive." \
+                        "You are player {player_info.name}, you are {player_info.alignment}, your role is the {player_info.role}." \
+                        "Given all information currently available to you and a list of player suspicions you have previously constructed, decide what players to choose for your ability."
     suspicions_list = get_suspicion_list(suspicions)
     
     first_prompt = f"Analyze the following information and existing suspicions and decide the {num} players to choose for your ability: \nInformation:\n{hist}\nSuspicions: \n{suspicions_list}"
