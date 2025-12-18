@@ -74,7 +74,7 @@ def get_suspicion_list(player_list: PlayerList):
     string = ""
     players_listed = player_list.get_players()
     for player in players_listed:
-        string += f"You are {int(player.suspicion * 100.0)}% suspicious of {player.name}.\n"
+        string += f"You think there is a {int(player.suspicion * 100.0)}% chance that {player.name} is on the EVIL team.\n"
     return string.strip()
 
 def identify_self(player_info:PlayerInfo):
@@ -85,15 +85,21 @@ def identify_self(player_info:PlayerInfo):
 def build_suspicions(history: list[str], suspicions: PlayerList, model: Llama, player_info: PlayerInfo):
     hist = combine_history(history)
 
-    system_prompt = f"You are playing a social deduction game where your goal is to find evil players." \
+    if player_info.alignment == "GOOD":
+        system_prompt = f"You are playing a social deduction game where your goal is to find evil players." \
                     "You are player {player_info.name}, you are {player_info.alignment}, your role is the {player_info.role}." \
-                    "Given a list of information and previous suspicions, list all players along with how suspicious they are and why." \
+                    "Given a list of information and a list that you previously made of how likely you thought each player is EVIL, list all players along with how likely they are to be EVIL and why." \
+                    "There can only be one of each role."
+    else:
+        system_prompt = f"You are playing a social deduction game where your goal is to pretend your role is a good character, eliminate good players and keep the demon alive." \
+                    "You are player {player_info.name}, you are {player_info.alignment}, your role is the {player_info.role}." \
+                    "Given a list of information and a list that you previously made of how likely you thought each player is EVIL, list all players along with how likely they are to be EVIL and why." \
                     "There can only be one of each role."
                     
     suspicions_list = get_suspicion_list(suspicions)
 
-    first_prompt = f"Analyze the following information and provide your reasoning:\nInformation:\n{hist}\nCurrent Suspicions:\n{suspicions_list}"
-    second_prompt = "From your reasoning, update the list of players to account for any change in suspicion level. List suspicion as a value from 0.0 to 1.0, representing a percentage."
+    first_prompt = f"Analyze the following information and provide your reasoning:\nInformation:\n{hist}\nPrevious probabilities that players are on the EVIL team:\n{suspicions_list}"
+    second_prompt = "From your reasoning, update the list of players to account for any change in how likely they are to be EVIL. List your expectation that players are EVIL as a value from 0.0 to 1.0, representing a percentage. 1.0 means a player is certainly EVIL; 0.0 means a player is certainly GOOD."
 
     response, response2 = use_llm(system_prompt=system_prompt, first_prompt=first_prompt, second_prompt=second_prompt, player_info=player_info, model=model, output_format=PlayerList.model_json_schema())
     return response2["choices"][0]["message"]["content"]
@@ -103,14 +109,14 @@ def request_information(history: list[str], suspicions: PlayerList, model: Llama
     if player_info.alignment == "GOOD":
         system_prompt = f"You are playing a social deduction game where your goal is to find evil players." \
                         "You are player {player_info.name}, you are {player_info.alignment}, your role is the {player_info.role}." \
-                        "Given a list of information and suspicions of players, decide whether to ask another player for more information, and if so, what question to ask."
+                        "Given a list of information and a list of how likely you think each player is EVIL, decide whether to ask another player for more information, and if so, what question to ask."
     else:
         system_prompt = f"You are playing a social deduction game where your goal is to pretend your role is a good character, eliminate good players and keep the demon alive." \
                         "You are player {player_info.name}, you are {player_info.alignment}, your role is the {player_info.role}." \
-                        "Given a list of information and suspicions of players, decide whether to ask another player for more information, and if so, what question to ask."
+                        "Given a list of information and a list of how likely you think each player is EVIL, decide whether to ask another player for more information, and if so, what question to ask."
         
     suspicions_list = get_suspicion_list(suspicions)
-    first_prompt = f"Analyze the following information and existing suspicions and decide if there is a player that could provide more information, and what question to ask:\nInformation:\n{hist}\nSuspicions:\n{suspicions_list}"
+    first_prompt = f"Analyze the following information and list of how likely you think each player is EVIL, and decide if there is a player that could provide more information, and what question to ask:\nInformation:\n{hist}\nChances each player is evil:\n{suspicions_list}"
     second_prompt = "From your reasoning, if there is a question to ask, return which player to approach and what question to ask."
 
     response, response2 = use_llm(system_prompt=system_prompt, first_prompt=first_prompt, second_prompt=second_prompt, player_info=player_info, model=model, output_format=Question.model_json_schema())
@@ -122,16 +128,16 @@ def answer_question(history: list[str], suspicions: PlayerList, question_info: Q
     if player_info.alignment == "GOOD":
         system_prompt = f"You are playing a social deduction game where your goal is to find evil players." \
                         "You are player {player_info.name}, you are {player_info.alignment}, your role is the {player_info.role}." \
-                        "You have been asked a question by a player. Given a list of information and suspicions of players, respond to the player." \
+                        "You have been asked a question by a player. Given a list of information and a list of how likely you think each player is EVIL, respond to the player." \
                         "Consider based on suspicion if you should respond truthfully, lie, or refuse to answer."
     else:
-        system_prompt = f"You are playing a social deduction game where your goal is to pretend to be a good character, eliminate good players, and keep the demon alive." \
+        system_prompt = f"You are playing a social deduction game where your goal is to pretend to be a good character, eliminate good players, and keep the DEMON alive." \
                         "You are player {player_info.name}, you are {player_info.alignment}, your role is the {player_info.role}." \
-                        "You have been asked a question by a player. Given a list of information and suspicions of players, respond to the player." \
+                        "You have been asked a question by a player. Given a list of information and a list of how likely you think each player is EVIL, respond to the player." \
 
     suspicions_list = get_suspicion_list(suspicions)
     
-    first_prompt = f"Analyze the following information and existing suspicions and decide how to respond to this player:\nInformation:\n{hist}\nSuspicions:\n{suspicions_list}\nQuestioner:{question_info.questioner}\nQuestion:{question_info.question}"
+    first_prompt = f"Analyze the following information and list of how likely you think each player is EVIL and decide how to respond to this player:\nInformation:\n{hist}\nChances each player is evil:\n{suspicions_list}\nQuestioner:{question_info.questioner}\nQuestion:{question_info.question}"
     second_prompt = "From your reasoning, return an answer to the question asked."
     response, response2 = use_llm(system_prompt=system_prompt, first_prompt=first_prompt, second_prompt=second_prompt, player_info=player_info, model=model)
     return response2["choices"][0]["message"]["content"]
@@ -143,16 +149,16 @@ def nominate_player(history: list[str], suspicions: PlayerList, model: Llama, pl
     if player_info.alignment == "GOOD":
         system_prompt = f"You are playing a social deduction game where your goal is to eliminate evil players." \
                         "You are player {player_info.name}, you are {player_info.alignment}, your role is the {player_info.role}." \
-                        "Given all information currently available to you and a list of player suspicions you have previously constructed, decide if there are any players that are suspicious enough that they should be put up for a vote for elimination."
+                        "Given all information currently available to you and a list of how likely each player is EVIL that you have previously constructed, decide if there are any players that are suspicious enough that they should be put up for a vote for elimination."
     else:
-       system_prompt = f"You are playing a social deduction game where your goal is to eliminate evil players." \
+       system_prompt = f"You are playing a social deduction game where your goal is to pretend to be a good character, eliminate good players, and keep the DEMON alive." \
                         "You are player {player_info.name}, you are {player_info.alignment}, your role is the {player_info.role}." \
-                        "Given all information crrently available to you and a list of player suspicions you have previously constructed, decide if there are any players that should be put up for a vote for elimination."
+                        "Given all information currently available to you and a list of how likely each player is EVIL that you have previously constructed, decide if there are any players that you want to put up for a vote for elimination."
     
     
     suspicions_list = get_suspicion_list(suspicions)
     
-    first_prompt = f"Analyze the following information and existing suspicions and decide if there is a suitable a nominee, there may not be one:\nInformation:\n{hist}\nSuspicions:\n{suspicions_list}"
+    first_prompt = f"Analyze the following information and list of how likely you think each player is EVIL and decide if there is a suitable nominee, there may not be one:\nInformation:\n{hist}\nSuspicions:\n{suspicions_list}"
     second_prompt = "From your reasoning, give a player for nomination if there is one, otherwise return nothing."
     response, response2 = use_llm(system_prompt=system_prompt, first_prompt=first_prompt, second_prompt=second_prompt, player_info=player_info, model=model, output_format=Player.model_json_schema())
     return response2["choices"][0]["message"]["content"]
@@ -163,12 +169,12 @@ def vote_player(history: list[str], suspicions: PlayerList, nominee: Player, mod
     
     system_prompt = f"You are playing a social deduction game where your goal is to decide if you should vote a player for elimination." \
                     "You are player {player_info.name}, you are {player_info.alignment}, your role is the {player_info.role}." \
-                    "Given all information currently available to you and a list of player suspicions you have previously constructed, decide if the nominee is suspicious enough to vote for."
+                    "Given all information currently available to you and a list of how likely you think each player is EVIL that you have previously constructed, decide if the nominee is someone you want to vote to execute."
 
     suspicions_list = get_suspicion_list(suspicions)
     nominees_list = get_suspicion_list(PlayerList(players = [nominee]))
 
-    first_prompt = f"Analyze the following information and existing suspicions and decide whether or not to vote for the nominee:\nInformation:\n{hist}\nSuspicions:\n{suspicions_list}\nNominee:\n{nominees_list}"
+    first_prompt = f"Analyze the following information and list of how likely you think each player is EVIL and decide whether or not to vote for the nominee:\nInformation:\n{hist}\nChances you think each player is EVIL:\n{suspicions_list}\nNominee:\n{nominees_list}"
     second_prompt = "From your reasoning, if you decide to vote for the nominee return True, otherwise return False."
 
     response, response2 = use_llm(system_prompt=system_prompt, first_prompt=first_prompt, second_prompt=second_prompt, player_info=player_info, model=model, output_format=Vote.model_json_schema())
@@ -181,14 +187,14 @@ def choose_players(history: list[str], suspicions: PlayerList, model: Llama, pla
     if player_info.alignment == "GOOD":
         system_prompt = f"You are playing a social deduction game where your goal is to find evil players." \
                         "You are player {player_info.name}, you are {player_info.alignment}, your role is the {player_info.role}." \
-                        "Given all information currently available to you and a list of player suspicions you have previously constructed, decide what players to choose for your ability."
+                        "Given all information currently available to you and a list of how likely you think each player is EVIL that you have previously constructed, decide what players to choose for your ability."
     else:
         system_prompt = f"You are playing a social deduction game where your goal is to pretend to be a good character, eliminate good players, and keep the demon alive." \
                         "You are player {player_info.name}, you are {player_info.alignment}, your role is the {player_info.role}." \
-                        "Given all information currently available to you and a list of player suspicions you have previously constructed, decide what players to choose for your ability."
+                        "Given all information currently available to you and a list of how likely you think each player is EVIL that you have previously constructed, decide what players to choose for your ability."
     suspicions_list = get_suspicion_list(suspicions)
     
-    first_prompt = f"Analyze the following information and existing suspicions and decide the {num} players to choose for your ability: \nInformation:\n{hist}\nSuspicions: \n{suspicions_list}"
+    first_prompt = f"Analyze the following information and existing chances you think each player is EVIL, and decide the {num} players to choose for your ability: \nInformation:\n{hist}\nChances you think each player is EVIL: \n{suspicions_list}"
     second_prompt = f"From your reasoning, give a list of the {num} players to choose for your ability. There must be {num} of them in the list."
     response, response2 = use_llm(system_prompt=system_prompt, first_prompt=first_prompt, second_prompt=second_prompt, player_info=player_info, model=model, output_format=PlayerList.model_json_schema())
     return response2["choices"][0]["message"]["content"]
@@ -201,13 +207,13 @@ def talk_publicly(history: list[str], suspicions: PlayerList, model: Llama, play
     if player_info.alignment == "GOOD":
         system_prompt = f"You are playing a social deduction game where your goal is to find evil players." \
                         "You are player {player_info.name}, you are {player_info.alignment}, your role is the {player_info.role}." \
-                        "Given all information currently available to you and a list of player suspicions you have previously constructed, decide if you would like to say anything publicly to every other player in the game."
+                        "Given all information currently available to you and a list of how likely you think each player is EVIL you have previously constructed, decide if you would like to say anything publicly to every other player in the game."
     else:
         system_prompt = f"You are playing a social deduction game where your goal is to pretend to be a good character, eliminate good players, and keep the demon alive." \
                         "You are player {player_info.name}, you are {player_info.alignment}, your role is the {player_info.role}." \
-                        "Given all information currently available to you and a list of player suspicions you have previously constructed, decide if you would like to say anything publicly."
+                        "Given all information currently available to you and a list of how likely you think each player is EVIL you have previously constructed, decide if you would like to say anything publicly."
     
-    first_prompt = f"Analyze the following information and existing suspicions and decide if you want to say anything publicly, you may not say anything: \nInformation\n{hist}\nSuspicions: \n{suspicions_list}."
+    first_prompt = f"Analyze the following information and existing chances you think that each player is EVIL and decide if you want to say anything publicly, you may not say anything: \nInformation\n{hist}\nChances you think each player is EVIL: \n{suspicions_list}."
     second_prompt = "From your reasoning, give a message to say publicly or return nothing."
     response, response2 = use_llm(system_prompt, first_prompt, second_prompt, player_info, model)
     return response2["choices"][0]["message"]["content"]
