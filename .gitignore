@@ -1,3 +1,4 @@
 gemma-3-4b-it-Q4_0.gguf
 Qwen3-4b-Instruct.gguf
 myenv/*
+cuda-ubuntu2404.pin
