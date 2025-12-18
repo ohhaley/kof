@@ -4,8 +4,8 @@ import json
 # To enable LLM functionality in this file: uncomment the next two lines, as well as the last line of code in this program.
 # You ALSO have to comment out all of the code that isn't in a class/function in Player_v2.
 # If you don't do that, Python will run that code and give an error.
-# from Player_v2 import build_suspicions, PlayerInfo, get_model, PlayerList, choose_players, nominate_player, vote_player
-# from Player_v2 import Player as NewPlayer
+from Player_v3 import build_suspicions, PlayerInfo, get_model, PlayerList, choose_players, nominate_player, vote_player
+from Player_v3 import Player as NewPlayer
 
 #Class representing a given game
 class Game:
@@ -390,6 +390,10 @@ g = Game(players,0,GamePhase.EVENING,bluffs)
 
 for p in g.getplayers():
     p.startsuspicions(g)
+    if p.role == Role.VIRGIN:
+        p.tokens.append(ReminderToken.VIRGIN_HAS_ABILITY)
+    if p.role == Role.SLAYER:
+        p.tokens.append(ReminderToken.SLAYER_HAS_ABILITY)
 
 def do_day(g, num_conversations):
     players = g.getplayers()
@@ -447,6 +451,17 @@ def do_evening(g):
         player.tell("Would you like to nominate someone? If so, who?")
         nominee = player.nominate_someone_or_not(can_be_nominated, g)
         if not nominee == None:
+            if nominee.role == Role.VIRGIN:
+                if ReminderToken.VIRGIN_HAS_ABILITY in nominee.tokens:
+                    nominee.tokens.remove(ReminderToken.VIRGIN_HAS_ABILITY)
+                    if role_to_character_type[player.role] == CharacterType.TOWNSFOLK and ReminderToken.DRUNK_IS_THE_DRUNK not in player.tokens:
+                        if ReminderToken.DRUNK_IS_THE_DRUNK not in nominee.tokens and ReminderToken.POISONER_IS_POISONED not in nominee.tokens:
+                            for p in g.getplayers():
+                                p.tell(f"{player.name} has nominated {nominee.name}. {player.name} is executed and dies.")
+                            player.alive = False
+                            player.tokens.append(ReminderToken.UNDERTAKER_EXECUTED_TODAY)
+                            return player
+
             can_be_nominated.remove(nominee)
             total_votes = 0
             players = g.getplayers()
@@ -490,11 +505,17 @@ def do_evening(g):
         print(f"{on_the_block.name} was executed")
         for p in g.getplayers(): p.tell(f"{on_the_block.name} was executed and dies")
         on_the_block.alive = False
+        on_the_block.tokens.append(ReminderToken.UNDERTAKER_EXECUTED_TODAY)
+        num_alive = 0
+        for p in g.getplayers():
+            if p.alive:
+                num_alive += 1
         if on_the_block.role == Role.IMP:
             for p in g.getplayers():
-                if p.role == Role.SCARLET_WOMAN and p.alive:
+                if p.role == Role.SCARLET_WOMAN and p.alive and num_alive >= 4:
                     p.tokens.append(ReminderToken.MINION_IS_THE_DEMON)
                     scarlet_woman(g)
+        return on_the_block
     else:
         print("No one was executed")
         for p in g.getplayers(): p.tell("No one was executed")
@@ -623,7 +644,10 @@ def start_game(g):
         g.incrementtime()
         #print(g.game_phase)
         # do evening
-        do_evening(g)
+        executed_player = do_evening(g)
+        if executed_player.role == Role.SAINT and ReminderToken.POISONER_IS_POISONED not in executed_player.tokens:
+            game_over = True
+            break
         # update alive players list
         for player in alive_players:
             if not player.alive:
@@ -670,6 +694,18 @@ def start_game(g):
             break
 
         g.incrementtime()
+
+    # game is over 
+    good_wins = True
+    for p in g.getplayers():
+        if p.role == Role.IMP and p.alive:
+            good_wins = False
+    
+    for p in g.getplayers():
+        if good_wins:
+            p.tell("The good team has won.")
+        else:
+            p.tell("The evil team has won.")
         
 
 
@@ -1097,5 +1133,5 @@ start_game(g)
 
 g.printgameinfo()
 
-# g.getplayers()[0].updatesuspicions()
+g.getplayers()[0].updatesuspicions()
 #^^this should work.
