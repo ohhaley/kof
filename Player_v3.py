@@ -1,12 +1,30 @@
 from llama_cpp import Llama
 from pydantic import BaseModel
+from huggingface_hub import hf_hub_download
 
 # gemma-3-4b-it-Q4_0.gguf
-llm = Llama(model_path=r"Qwen3-4b-Instruct.gguf", n_gpu_layers=-1, verbose=False, logits_all=False, n_ctx=4096)
+# llm = Llama(model_path=r"Qwen3-4b-Instruct.gguf", n_gpu_layers=-1, verbose=False, logits_all=False, n_ctx=4096)
+
+
+
+
+# llm = Llama.from_pretrained(
+# 	repo_id="byteshape/Qwen3-4B-Instruct-2507-GGUF",
+# 	filename="Qwen3-4B-Instruct-2507-Q5_K_S-4.74bpw.gguf",
+# )
+
 
 def get_model(context_window = 4096):
-    llm = Llama(model_path=r"Qwen3-4b-Instruct.gguf", n_gpu_layers=-1, verbose=False, n_ctx=context_window, mirostat_mode=2)
+    repo_id = "byteshape/Qwen3-4B-Instruct-2507-GGUF"
+    filename="Qwen3-4B-Instruct-2507-Q5_K_S-4.74bpw.gguf"
+    model_path = hf_hub_download(repo_id=repo_id, filename=filename)
+    llm = Llama(
+        model_path=model_path,
+        n_ctx = context_window
+    )
     return llm
+
+llm = get_model()
 
 class PlayerInfo():
     name: str
