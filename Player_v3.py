@@ -159,6 +159,8 @@ def vote_player(history: list[str], suspicions: PlayerList, nominee: Player, mod
 def choose_players(history: list[str], suspicions: PlayerList, model: Llama, player_info: PlayerInfo, num):
     hist = combine_history(history)
 
+    with open("systemprompt.md", 'r') as f: game_info = f.read()
+
     if player_info.alignment == "GOOD":
         system_prompt = f"You are playing a social deduction game where your goal is to find evil players." \
                         "You are player {player_info.name}, you are {player_info.alignment}, your role is the {player_info.role}." \
@@ -167,6 +169,7 @@ def choose_players(history: list[str], suspicions: PlayerList, model: Llama, pla
         system_prompt = f"You are playing a social deduction game where your goal is to pretend to be a good character, eliminate good players, and keep the demon alive." \
                         "You are player {player_info.name}, you are {player_info.alignment}, your role is the {player_info.role}." \
                         "Given all information currently available to you and a list of player suspicions you have previously constructed, decide what players to choose for your ability."
+    system_prompt = game_info+"\n"+system_prompt
     suspicions_list = get_suspicion_list(suspicions)
     
     first_prompt = f"Analyze the following information and existing suspicions and decide the {num} players to choose for your ability: \nInformation:\n{hist}\nSuspicions: \n{suspicions_list}"
