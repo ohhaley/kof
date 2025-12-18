@@ -62,6 +62,18 @@ class Game:
 
         sorted_susses = sorted(susses, key=lambda player: player[0].name)
         return sorted_susses
+    
+    def avg_sus_err(self):
+        players = self.getplayers()
+        num_good = 0
+        total_err = 0
+        for player in players:
+            if player.alignment == Alignment.GOOD:
+                num_good += 1
+                err = player.find_sus_err(self)
+                total_err += err
+        avg_err = total_err / num_good
+        return avg_err
 
 
 #Class representing a player
@@ -210,9 +222,18 @@ class Player:
             return False
         
     def startsuspicions(self, g):
-        all_players = []
+        all_players = [] 
         for player in g.getplayers():
-            all_players.append(NewPlayer(name=player.name, suspicion = 0.0))
+            if self.alignment == Alignment.GOOD:
+                if player.name == self.name:
+                    all_players.append(NewPlayer(name=player.name, suspicion = 0.0))
+                else:
+                    all_players.append(NewPlayer(name=player.name, suspicion=2/7))
+            else:
+                if player.alignment == Alignment.EVIL:
+                    all_players.append(NewPlayer(name=player.name, suspicion = 1.0))
+                else:
+                    all_players.append(NewPlayer(name=player.name, suspicion=0.0))
         suspicions = PlayerList(players = all_players)
         self.suspicions = suspicions
         
