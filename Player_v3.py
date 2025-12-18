@@ -174,6 +174,25 @@ def choose_players(history: list[str], suspicions: PlayerList, model: Llama, pla
     response, response2 = use_llm(system_prompt=system_prompt, first_prompt=first_prompt, second_prompt=second_prompt, player_info=player_info, model=model, output_format=PlayerList.model_json_schema())
     return response2["choices"][0]["message"]["content"]
 
+def talk_publicly(history: list[str], suspicions: PlayerList, model: Llama, player_info: PlayerInfo):
+    hist = combine_history(hist)
+
+    suspicions_list = get_suspicion_list(suspicions)
+
+    if player_info.alignment == "GOOD":
+        system_prompt = f"You are playing a social deduction game where your goal is to find evil players." \
+                        "You are player {player_info.name}, you are {player_info.alignment}, your role is the {player_info.role}." \
+                        "Given all information currently available to you and a list of player suspicions you have previously constructed, decide if you would like to say anything publicly to every other player in the game."
+    else:
+        system_prompt = f"You are playing a social deduction game where your goal is to pretend to be a good character, eliminate good players, and keep the demon alive." \
+                        "You are player {player_info.name}, you are {player_info.alignment}, your role is the {player_info.role}." \
+                        "Given all information currently available to you and a list of player suspicions you have previously constructed, decide if you would like to say anything publicly."
+    
+    first_prompt = f"Analyze the following information and existing suspicions and decide if you want to say anything publicly, you may not say anything: \nInformation\n{hist}\nSuspicions: \n{suspicions_list}."
+    second_prompt = "From your reasoning, give a message to say publicly or return nothing."
+    response, response2 = use_llm(system_prompt, first_prompt, second_prompt, player_info, model)
+    return response2["choices"][0]["message"]["content"]
+
 # All LLM calls go through here.
 # The LLM will think using the initial message_template before being called again with their reasoning and the second prompt to give a structured format if asked for. Leave blank if no special output format is needed.
 def use_llm(system_prompt: str, first_prompt: str, second_prompt: str, player_info: PlayerInfo, model: Llama, output_format=None):

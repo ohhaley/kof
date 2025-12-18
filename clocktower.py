@@ -7,6 +7,8 @@ import json
 from Player_v3 import build_suspicions, PlayerInfo, get_model, PlayerList, choose_players, nominate_player, vote_player, request_information
 from Player_v3 import Player as NewPlayer
 
+model = get_model()
+
 #Class representing a given game
 class Game:
     def __init__(self,players,num_days,game_phase,bluffs):
@@ -71,7 +73,6 @@ class Player:
     #Use this function to allow a player to choose X players for their ability.
     #This is probably one of the function we'll edit the most for our project
     def choose_players_for_ability(self,g,num):
-        model = get_model()
         pi = PlayerInfo(self.name,self.alignment.name,self.role.name)
         choices_json = choose_players(self.history, self.suspicions, model, pi, num)
         choices_dict = json.loads(choices_json)
@@ -87,7 +88,6 @@ class Player:
     
     # function to allow player to choose a player to talk to
     def choose_player_to_talk_to(self, g):
-        model = get_model()
         pi = PlayerInfo(self.name,self.alignment.name,self.role.name)
         question_json = request_information(self.history, self.suspicions, model, pi)
         question = json.loads(question_json)
@@ -110,7 +110,6 @@ class Player:
         #return msg
     
     def nominate_someone_or_not(self,can_be_nominated, g):
-        model = get_model()
         pi = PlayerInfo(self.name, self.alignment.name, self.role.name)
         player_json = nominate_player(self.history, self.suspicions, model, pi)
         player_dict = json.loads(player_json)
@@ -131,7 +130,6 @@ class Player:
             self.tell("I could not vote because I am the BUTLER")
             return False
 
-        model = get_model()
         suspicion_of_nominee = 0
         for p in self.suspicions.players:
             if p.name == nominee.name:
@@ -158,7 +156,6 @@ class Player:
         self.suspicions = suspicions
         
     def updatesuspicions(self):
-        model = get_model()
         pi = PlayerInfo(self.name,self.alignment.name,self.role.name)
         suspicions_json = build_suspicions(self.history,self.suspicions,model,pi)
         suspicions_dict = json.loads(suspicions_json)
