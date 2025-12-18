@@ -142,7 +142,7 @@ def vote_player(history: list[str], suspicions: PlayerList, nominee: Player, mod
     return response2["choices"][0]["message"]["content"]
 
 def choose_players(history: list[str], suspicions: PlayerList, model: Llama, player_info: PlayerInfo, num):
-    hist = combine_history(hist)
+    hist = combine_history(history)
 
     system_prompt = f"You are playing a social deduction game where your goal is to find evil players." \
                     "You are player {player_info.name}, you are {player_info.alignment}, your role is the {player_info.role}." \

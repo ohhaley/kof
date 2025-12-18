@@ -4,7 +4,7 @@ import json
 # To enable LLM functionality in this file: uncomment the next two lines, as well as the last line of code in this program.
 # You ALSO have to comment out all of the code that isn't in a class/function in Player_v2.
 # If you don't do that, Python will run that code and give an error.
-from Player_v3 import build_suspicions, PlayerInfo, get_model, PlayerList, choose_players, nominate_player, vote_player
+from Player_v3 import build_suspicions, PlayerInfo, get_model, PlayerList, choose_players, nominate_player, vote_player, request_information
 from Player_v3 import Player as NewPlayer
 
 #Class representing a given game
@@ -87,10 +87,17 @@ class Player:
     
     # function to allow player to choose a player to talk to
     def choose_player_to_talk_to(self, g):
-        players = g.getplayers()
-        possible_choices = [player for player in players if player.seat != self.seat]
-        choice = random.choice(possible_choices)
-        return choice
+        model = get_model()
+        pi = PlayerInfo(self.name,self.alignment.name,self.role.name)
+        question_json = request_information(self.history, self.suspicions, model, pi)
+        question = json.loads(question_json)
+        for p in g.getplayers():
+            if p.name == question["target"]["name"]: return p, question["question"]
+        return None, question["question"]
+        #players = g.getplayers()
+        #possible_choices = [player for player in players if player.seat != self.seat]
+        #choice = random.choice(possible_choices)
+        #return choice
 
     def say_publicly(self):
         msg = f"{self.name} says publicly: Hi! I am the "+self.role.name
@@ -98,9 +105,9 @@ class Player:
         else: return ""
         #TODO
 
-    def say_privately(self, player_to_tell):
-        msg = f"{self.name} tells you: Hi! I am the {self.role.name}"
-        return msg
+    #def say_privately(self, player_to_tell, msg=""):
+        #msg = f"{self.name} tells you: Hi! I am the {self.role.name}"
+        #return msg
     
     def nominate_someone_or_not(self,can_be_nominated, g):
         model = get_model()
@@ -416,9 +423,8 @@ def do_day(g, num_conversations):
     for i in range(num_conversations):
         for p in g.getplayers():
             p.tell("Choose a player to talk to")
-            choice = p.choose_player_to_talk_to(g)
-            msg = p.say_privately(choice)
-            choice.tell(msg)
+            choice, msg = p.choose_player_to_talk_to(g)
+            if not choice == None: choice.tell(msg)
             
 
 
