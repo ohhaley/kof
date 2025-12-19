@@ -61,6 +61,8 @@ def preprocess_data(file_name):
 
     dataset = Dataset.from_pandas(data)
 
+    formatted_data = data.apply(format_messages)
+
     
 
     # A step here to apply loss function to the data
