@@ -94,7 +94,7 @@ class Player:
     def tell(self,msg):
         self.history.append(msg)
 
-    def find_sus_err(self,g):
+    def find_my_err(self,g):
         self_suspicions = []
         for p in self.suspicions.players:
             self_suspicions.append(p.suspicion)
@@ -104,6 +104,31 @@ class Player:
         print(len(self_suspicions),len(real_suspicions),self_suspicions,real_suspicions)
         euclidean_dist = math.dist(self_suspicions, real_suspicions)
         return euclidean_dist
+
+    def find_sus_err(self,g):
+        if self.alignment == Alignment.GOOD:
+            my_err = self.find_my_err(g)
+            other_good_err = 0
+            total_good_others = 0
+            other_err_hyperparam = 0.8
+            for player in g.getplayers():
+                if not player == self:
+                    if player.alignment == Alignment.GOOD:
+                        total_good_others = total_good_others+1
+                        other_good_err = other_good_err+player.find_my_err(g)
+            other_good_err = other_err_hyperparam*other_good_err/total_good_others
+            return my_err+other_good_err
+        else:
+            good_err = 0
+            total_good_others = 0
+            good_err_hyperparam = 0.8
+            for player in g.getplayers():
+                if player.alignment == Alignment.GOOD:
+                    total_good_others = total_good_others+1
+                    good_err = good_err+player.find_my_err(g)
+            good_err = good_err_hyperparam*good_err/total_good_others
+            return good_err
+
 
     #Use this function to allow a player to choose X players for their ability.
     #This is probably one of the function we'll edit the most for our project

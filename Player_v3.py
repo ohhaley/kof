@@ -253,6 +253,10 @@ def use_llm(system_prompt: str, first_prompt: str, second_prompt: str, player_in
     response = model.create_chat_completion(messages=message_template, temperature=0.1, max_tokens=max_tokens)
     print(response["choices"][0]["message"]["content"])
     with open("finetune.csv","a") as f:
+        f.write(player_info.name)
+        f.write("[[::]]")
+        f.write(player_info.role)
+        f.write("[[::]]")
         f.write(str(message_template).replace('\n', ''))
         f.write("[[::]]")
         f.write(response["choices"][0]["message"]["content"].replace('\n', ''))
