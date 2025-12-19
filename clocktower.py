@@ -697,6 +697,8 @@ def do_evening(g):
     else:
         print("No one was executed")
         for p in g.getplayers(): p.tell("No one was executed")
+        return None
+        #RETURN SOMETHING, and where this function is called, HANDLE A POSSIBLE RETURN OF 'None'!
                     
 
     
@@ -837,11 +839,11 @@ def start_game(g):
         for player in alive_players:
             if not player.alive:
                 alive_players.remove(player)
-
-        if executed_player.role == Role.SAINT and ReminderToken.POISONER_IS_POISONED not in executed_player.tokens:
-            saint_loss = True
-            game_over = True
-            break
+        if not executed_player == None:
+            if executed_player.role == Role.SAINT and ReminderToken.POISONER_IS_POISONED not in executed_player.tokens:
+                saint_loss = True
+                game_over = True
+                break
         if executed_player == None and len(alive_players) == 3:
             for p in alive_players:
                 if p.role == Role.MAYOR and ReminderToken.DRUNK_IS_THE_DRUNK not in p.tokens and ReminderToken.POISONER_IS_POISONED not in p.tokens:
