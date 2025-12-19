@@ -4,7 +4,7 @@ import math
 import numpy as np
 import pandas as pd
 import random
-from datasets import load_dataset
+from datasets import load_dataset, Dataset
 from transformers import AutoTokenizer, AutoModelForSequenceClassification, TrainingArguments, Trainer
 
 repo_id = 'Qwen/Qwen3-4B-Instruct-2507'
@@ -36,39 +36,63 @@ def split_data(data, training_percentage, seed):
     testing = shuffled_data.iloc[training_rows:, :]
     return training, testing
 
+def format_messages(entry):
+    content = f"<think>\n{entry['reasoning']}\n</think>\n{entry['label']}"
+
+    messages = [
+        {'role': 'user', 'content': entry['prompt'],
+         'role': 'assistant', 'content': content}
+    ]
+    return {'messages': messages}
+
 # Read in the fine tuning csv
-column_names = ['prompt 1', 'response 1', 'response 2', 'label']
-data = pd.read_csv('finetune.csv', header=None, names=column_names, sep='\[\[::\]\]', engine='python', on_bad_lines='skip')
-
 # ---------- PREPROCESSING ----------
+def preprocess_data(file_name):
 
-# Convert response 2 to a dict from a string
-data['response 2'] = data['response 2'].apply(convert_to_dict)
+    column_names = ['prompt 1', 'reasoning', 'response 2', 'label']
+    data = pd.read_csv(file_name, header=None, names=column_names, sep='\[\[::\]\]', engine='python', on_bad_lines='skip')
 
-# game_info is a prefix to remove from 'prompt 1'
-with open("systemprompt.md", 'r') as f: game_info = f.read()
-data['prompt 1'] = data['prompt 1'].str.removeprefix(game_info)
+    # game_info is a prefix to remove from 'prompt 1'
+    with open("systemprompt.md", 'r') as f: game_info = f.read()
+    data['prompt 1'] = data['prompt 1'].str.removeprefix(game_info)
 
-# A step here to apply loss function to the data
-# TODO
+    # Convert response 2 to a dict from a string
+    # data['response 2'] = data['response 2'].apply(convert_to_dict)
 
-# Something here to make sure
-for response2 in data['response 2']:
-    if 'players' in response2:
-        # TODO - since we save every llm response, gotta process all types of response into something trainable or drop them.
-        pass
-        
-processed_data = data
+    dataset = Dataset.from_pandas(data)
 
-# Turn data into tokens
-# Do this last
-tokenized_data = processed_data.map(tokenize_func, batched=True)
+    formatted_data = data.apply(format_messages)
 
-# Shuffle and split data into two sets
-# Do this last as well
-train_dataset, eval_dataset = split_data(tokenized_data, 0.8, 11111)
+    
 
-print(train_dataset.head())
+    # A step here to apply loss function to the data
+    # TODO
+
+    # Something here to make sure that the different outputs we get for our various LLM calls is properly set up for us to give for prediction
+    for response2 in data['response 2']:
+        if 'players' in response2:
+            # TODO - since we save every llm response, gotta process all types of response into something trainable or drop them.
+            pass
+            
+
+    # At this point:
+    # 
+
+
+    processed_data = split_data(data, 0.8, 11111)
+
+
+    # Turn data into tokens
+    # Do this last
+    tokenized_data = processed_data.map(tokenize_func, batched=True)
+
+    # Shuffle and split data into two sets
+    # Do this last as well
+    train_dataset, eval_dataset = split_data(tokenized_data, 0.8, 11111)
+    return train_dataset, eval_dataset
+
+td, ed = preprocess_data('finetune.csv')
+print(td.head())
 
 def fine_tune():
 
@@ -78,7 +102,7 @@ def fine_tune():
     # our training thing does it by epochs like our neural nets i guess
     training_arguments = TrainingArguments("test_trainer", evaluation_strategy="epoch")
 
-    trainer = Trainer(model=model, args=training_arguments, train_dataset=train_dataset, eval_dataset=eval_dataset, compute_metrics=compute_metrics)
+    trainer = Trainer(model=model, args=training_arguments, train_dataset=td, eval_dataset=ed, compute_metrics=compute_metrics)
 
     # trainer is now trained.
     trainer.train()
