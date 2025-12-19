@@ -66,7 +66,16 @@ trainer = SFTTrainer(model = model,
                      ))
 
 trainer_stats = trainer.train()
+
 print(trainer_stats)
 
-trainer.save_model("./naci_finetuned/fine_tuned_model")
+while True:
+    str_in = input("Talk to the LLM: ")
+    inputs = tokenizer.encode(str_in,return_tensors="pt").to("cuda")
+    outputs = model.generate(inputs)
+    print(tokenizer.decode(outputs[0]))
+
+
+
+#trainer.save_model("./naci_finetuned/fine_tuned_model")
 #model.save_pretrained_gguf("naci_finetuned_gguf", tokenizer=tokenizer, quantization_method="q4_k_m")
