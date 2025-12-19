@@ -5,6 +5,8 @@ from trl import SFTTrainer, SFTConfig
 
 repo_id = 'Qwen/Qwen3-4B-Instruct-2507'
 tokenizer = AutoTokenizer.from_pretrained(repo_id)
+
+# Following two lines originate from Gemini
 tokenizer.pad_token = tokenizer.eos_token
 tokenizer.chat_template = (
     "{% for message in messages %}"
@@ -31,8 +33,9 @@ def format_messages(entry):
         {'role': 'user', 'content': entry['prompt']},
         {'role': 'assistant', 'content': entry['reasoning']}
     ]
-    return pd.Series({'messages': messages, 'label': entry['response']})
+    return pd.Series({'messages': messages, 'label': entry['response 2']})
 
+# This method originates from Gemini
 def validate_dataset(dataset, tokenizer):
     print("--- Validating Dataset for Assistant Tokens ---")
     found_issue = False
