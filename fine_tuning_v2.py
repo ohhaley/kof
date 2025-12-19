@@ -56,6 +56,37 @@ def validate_dataset(dataset, tokenizer):
 # ---------- PREPROCESSING ----------
 def preprocess_data(file_name):
 
+    good_threshold = 2.3
+    evil_threshold = 1.0
+
+    thresholds = {
+        'WASHERWOMAN': good_threshold,
+        'LIBRARIAN': good_threshold,
+        'INVESTIGATOR': good_threshold,
+        'CHEF': good_threshold,
+        'EMPATH': good_threshold,
+        'FORTUNETELLER': good_threshold,
+        'UNDERTAKER': good_threshold,
+        'MONK': good_threshold,
+        'RAVENKEEPER': good_threshold,
+        'VIRGIN': good_threshold,
+        'SLAYER': good_threshold,
+        'SOLDIER': good_threshold,
+        'MAYOR': good_threshold,
+        'BUTLER': good_threshold,
+        'SAINT': good_threshold,
+        'RECLUSE': good_threshold,
+        'DRUNK': good_threshold,
+
+        'POISONER': evil_threshold,
+        'SPY': evil_threshold,
+        'BARON': evil_threshold,
+        'SCARLET WOMAN': evil_threshold,
+        'IMP': evil_threshold
+    }
+
+    evil_roles = ['POISONER','SPY','BARON','SCARLET WOMAN','IMP']
+
     column_names = ['name', 'role', 'prompt', 'reasoning', 'response 2', 'label']
     data = pd.read_csv(file_name, header=None, names=column_names, sep='\[\[::\]\]', engine='python', on_bad_lines='skip')
 
@@ -66,11 +97,18 @@ def preprocess_data(file_name):
     with open("systemprompt.md", 'r') as f: game_info = f.read()
     data['prompt'] = data['prompt'].str.removeprefix(game_info)
 
+    val = pd.to_numeric(data['label'], errors='coerce')
+    thresh = data['role'].map(thresholds)
+
+    mask = (data['role'].isin(evil_roles) & (val > thresh)) | (~data['role'].isin(evil_roles) & (val < thresh))
+
+    filtered_data = data[mask]
+
     # Convert response 2 to a dict from a string
     # data['response 2'] = data['response 2'].apply(convert_to_dict)
 
     # dataset = Dataset.from_pandas(data)
-    dataset = data.apply(format_messages, axis=1)
+    dataset = filtered_data.apply(format_messages, axis=1)
     # tokenized_data = formatted_data.map(tokenize_func, batched=True)
 
     # Shuffle and split data into two sets
