@@ -31,7 +31,7 @@ def format_messages(entry):
         {'role': 'user', 'content': entry['prompt']},
         {'role': 'assistant', 'content': entry['reasoning']}
     ]
-    return pd.Series({'messages': messages, 'label': entry['label']})
+    return pd.Series({'messages': messages, 'label': entry['response']})
 
 def validate_dataset(dataset, tokenizer):
     print("--- Validating Dataset for Assistant Tokens ---")
