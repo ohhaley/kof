@@ -4,3 +4,4 @@ myenv/*
 cuda-ubuntu2404.pin
 *pyc
 *.gguf
+test_trainer
