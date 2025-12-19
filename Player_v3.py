@@ -218,6 +218,25 @@ def talk_publicly(history: list[str], suspicions: PlayerList, model: Llama, play
     response, response2 = use_llm(system_prompt, first_prompt, second_prompt, player_info, model)
     return response2["choices"][0]["message"]["content"]
 
+def claim_slayer(history: list[str], suspicions: PlayerList, model: Llama, player_info: PlayerInfo):
+    hist = combine_history(history)
+    suspicions_list = get_suspicion_list(suspicions)
+
+    if player_info.alignment == "GOOD":
+        system_prompt = f"You are playing a social deduction game where your goal is to find and eliminate evil players." \
+                        f"You are player {player_info.name}, you are {player_info.alignment}, your role is the {player_info.role}." \
+                        "Given all the information currently available to you and a list of how likely you think each player is EVIL you have previously constructed, decide if you would like to claim to be the slayer and use the slayer ability, and which other player you would like to choose as the target."
+    else:
+        system_prompt = f"You are playing a social deductin game where your goal is to pretend to be a good character, eliminate good players, and keep the demon alive." \
+                        f"You are player {player_info.name}, you are {player_info.alignment}, your role is the {player_info.role}." \
+                        "Given all information currently available to you and a list of how likely you think each player is EVIL you have previously constructed, decide if you would like to claim to be the slayer and and use the slayer ability, and which other player you would like to choose as the target."
+        
+    first_prompt = f"Analyze the following information and existing chances you think that each player is EVIL and decide if you want to claim to be the slayer and use the slayer ability, and which other player to target with this ability. You may only do so once per game. You may do this if you are not the actual slayer. If you are not the actual slayer, the ability will not work. \nInformation:\n{hist}\nChances you think each player is Evil: \n{suspicions_list}"
+    second_prompt = "From your reasoning, return the player you would like to target with the slayer ability, otherwise return nothing."
+    response, response2 = use_llm(system_prompt, first_prompt, second_prompt, player_info, model, Player.model_json_schema())
+    return response2["choices"][0]["message"]["content"]
+
+
 # All LLM calls go through here.
 # The LLM will think using the initial message_template before being called again with their reasoning and the second prompt to give a structured format if asked for. Leave blank if no special output format is needed.
 def use_llm(system_prompt: str, first_prompt: str, second_prompt: str, player_info: PlayerInfo, model: Llama, output_format=None, max_tokens = 75):
