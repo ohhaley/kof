@@ -24,16 +24,16 @@ model = FastLanguageModel.get_peft_model(
 
 from datasets import load_dataset
 
-name = "mlabonne/FineTome-100k"
-non_reasoning_data = load_dataset(name,split="train")
+# name = "mlabonne/FineTome-100k"
+# non_reasoning_data = load_dataset(name,split="train")
 
-#print(non_reasoning_data[0])
+# print(non_reasoning_data[0])
+
+# print(type(non_reasoning_data))
+
+non_reasoning_data = load_dataset("json",data_files="test_ft.json",split="train")
 
 print(type(non_reasoning_data))
-
-#non_reasoning_data = load_dataset("json",data_files="test_ft.json")
-
-#print(type(non_reasoning_data))
 
 from unsloth.chat_templates import standardize_sharegpt
 
@@ -48,7 +48,7 @@ def apply_template(row):
     return row
 
 #non_reasoning_conv = tokenizer.apply_chat_template(dataset["conversations"])
-#similarly from ChatGPT
+#similarly from ChatGPT, same prompt as before
 dataset = dataset.map(apply_template)
 
 from trl import SFTTrainer, SFTConfig
