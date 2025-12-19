@@ -31,7 +31,7 @@ from datasets import load_dataset
 
 # print(type(non_reasoning_data))
 
-non_reasoning_data = load_dataset("json",data_files="test_ft.json",split="train")
+non_reasoning_data = load_dataset("json",data_files="test_ft_with_data.json",split="train")
 
 print(type(non_reasoning_data))
 
