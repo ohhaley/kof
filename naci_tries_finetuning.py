@@ -39,7 +39,7 @@ from unsloth.chat_templates import standardize_sharegpt
 
 dataset = standardize_sharegpt(non_reasoning_data)
 
-#from ChatGPT. Full prompt can be found in: 
+#from ChatGPT. Full prompt can be found in gpt-prompt.txt
 def apply_template(row):
     row["text"] = tokenizer.apply_chat_template(
         row["conversations"],
@@ -48,7 +48,7 @@ def apply_template(row):
     return row
 
 #non_reasoning_conv = tokenizer.apply_chat_template(dataset["conversations"])
-
+#similarly from ChatGPT
 dataset = dataset.map(apply_template)
 
 from trl import SFTTrainer, SFTConfig

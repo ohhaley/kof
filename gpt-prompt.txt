@@ -1,0 +1,129 @@
+PROMPT: data = load_dataset("path/to/dataset", split="train") from unsloth.chat_templates import standardize_sharegpt dataset = standardize_sharegpt(data) conv = tokenizer.apply_chat_template(dataset["conversations"]) gives the error UndefinedError: 'list object' has no attribute 'content'
+
+RESPONSE: Let’s break it down cleanly.
+
+What the error actually means
+UndefinedError: 'list object' has no attribute 'content'
+
+
+This comes from Jinja templating inside apply_chat_template.
+
+It means:
+
+The chat template expected each message to be an object like
+{"role": "...", "content": "..."}
+but instead it received a list.
+
+So somewhere, the template is doing:
+
+message.content
+
+
+…but message is actually a list.
+
+Root cause (this line)
+conv = tokenizer.apply_chat_template(dataset["conversations"])
+
+Why this fails
+
+After:
+
+dataset = standardize_sharegpt(data)
+
+
+your dataset structure is:
+
+dataset[i]["conversations"] == [
+    {"role": "user", "content": "..."},
+    {"role": "assistant", "content": "..."}
+]
+
+
+So:
+
+dataset["conversations"]
+
+
+is:
+
+List[List[Dict[str, str]]]
+
+
+But apply_chat_template expects either:
+
+A single conversation → List[Dict]
+
+OR to be called per row, usually via .map()
+
+You passed it the entire column, so it sees a list-of-lists and breaks.
+
+✅ Correct usage (MOST IMPORTANT FIX)
+Option 1: Apply to ONE example (for testing)
+conv = tokenizer.apply_chat_template(
+    dataset[0]["conversations"],
+    tokenize=False
+)
+
+
+✅ This should work immediately.
+
+Option 2: Apply to the whole dataset (the right way)
+
+You must use .map():
+
+def apply_template(example):
+    example["text"] = tokenizer.apply_chat_template(
+        example["conversations"],
+        tokenize=False
+    )
+    return example
+
+dataset = dataset.map(apply_template)
+
+
+Now you’ll have:
+
+dataset[i]["text"]  # ready for training
+
+✅ Minimal correct pipeline (Unsloth-style)
+from datasets import load_dataset
+from unsloth.chat_templates import standardize_sharegpt
+
+dataset = load_dataset("path/to/dataset", split="train")
+
+dataset = standardize_sharegpt(dataset)
+
+def formatting_func(example):
+    return {
+        "text": tokenizer.apply_chat_template(
+            example["conversations"],
+            tokenize=False
+        )
+    }
+
+dataset = dataset.map(formatting_func)
+
+
+This is exactly what Unsloth expects for SFT.
+
+Quick sanity check (run this)
+print(dataset[0]["conversations"])
+
+
+You should see:
+
+[
+  {'role': 'user', 'content': '...'},
+  {'role': 'assistant', 'content': '...'}
+]
+
+
+If instead you see nested lists → something earlier is wrong.
+
+Summary
+Mistake	Fix
+Passing dataset["conversations"]	Use dataset[i]["conversations"] or .map()
+Template expects .content	Ensure messages are dicts, not lists
+Calling tokenizer once	Apply per-example
+
+If you want, paste one example of dataset[0]["conversations"], and I can verify it matches your specific chat template (LLaMA, Mistral, Phi, etc.).
