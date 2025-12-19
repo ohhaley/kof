@@ -523,7 +523,7 @@ def do_day(g, num_conversations):
 
 def do_evening(g):
     #public discussion
-    num_speech_turns = 2
+    num_speech_turns = 1
     players = g.getplayers()
     random.shuffle(players)
     for p in players:
@@ -743,7 +743,7 @@ def start_game(g):
     while not game_over:
         print(g.num_days,g.game_phase.name,len(alive_players)," players")
         #daytime happens, each player can tell something to three other players
-        do_day(g, 3)
+        do_day(g, 1)
         for p in g.getplayers():
             p.updatesuspicions(g)
         g.incrementtime()
