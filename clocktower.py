@@ -251,7 +251,7 @@ class Player:
     def slayer_claim(self, g):
         players = g.getplayers()
         pi = PlayerInfo(self.name, self.alignment.name, self.role.name)
-        player_to_slay_json = claim_slayer(self.hsitory, self.suspicions, model, pi)
+        player_to_slay_json = claim_slayer(self.history, self.suspicions, model, pi)
         player_to_slay = json.loads(player_to_slay_json)
         slain_name = player_to_slay["name"]
         with open("finetune.csv","a") as f:
@@ -299,7 +299,17 @@ class Player:
         for val in suspicions_dict.values():
             for item in val:
                 new_suspicions.append(NewPlayer(name = item['name'], suspicion = item['suspicion']))
+
+        if len(new_suspicions) < len(g.getplayers()):
+            names_in_suspicions = [p.name for p in new_suspicions]
+            for player in self.suspicions.players:
+                if player.name not in names_in_suspicions:
+                    new_suspicions.append(player)
+
+        
         sorted_suspicions = sorted(new_suspicions, key=lambda player: player.name)
+        print(f'NUMBER OF PLAYERS IN SUSPIONS: {len(sorted_suspicions)}')
+        
         self.suspicions = PlayerList(players = sorted_suspicions)
         with open("finetune.csv","a") as f:
             f.write("[[::]]")
@@ -591,6 +601,7 @@ def do_evening(g):
             p.slayer_claim(g)
 
     #noms
+    num_noms = 0
     can_nominate = g.getplayers()
     for player in can_nominate:
             if not player.alive:
@@ -602,9 +613,12 @@ def do_evening(g):
     votes_to_die = round(len(can_nominate)/2)-1
     on_the_block = None
     for player in can_nominate:
+        if num_noms > 2:
+            break
         player.tell("Would you like to nominate someone? If so, who?")
         nominee = player.nominate_someone_or_not(can_be_nominated, g)
         if not nominee == None:
+            num_noms += 1
             if nominee.role == Role.VIRGIN:
                 if ReminderToken.VIRGIN_HAS_ABILITY in nominee.tokens:
                     nominee.tokens.remove(ReminderToken.VIRGIN_HAS_ABILITY)
