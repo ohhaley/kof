@@ -1,66 +1,69 @@
-from datasets import load_dataset, Dataset
-from transformers import Trainer
-from transformers import TrainingArguments
-from transformers import AutoTokenizer
-from transformers import AutoModelForSequenceClassification
-import numpy as np
-import evaluate
-import pandas as pd
+#adapted from https://www.dailydoseofds.com/p/step-by-step-guide-to-fine-tune-qwen3/
+from unsloth import FastLanguageModel
+import torch
 
-raw_datasets = load_dataset("imdb")
-print(raw_datasets["train"]["text"])
-print(raw_datasets["train"]["label"])
-metric = evaluate.load("accuracy")
+MODEL = "unsloth/Qwen3-14B"
 
-tokenizer = AutoTokenizer.from_pretrained("bert-base-cased")
-
-def preprocess_data(file_name):
-
-    column_names = ['prompt 1', 'reasoning', 'response 2', 'label']
-    data = pd.read_csv(file_name, header=None, names=column_names, sep='\[\[::\]\]', engine='python', on_bad_lines='skip')
-
-    # game_info is a prefix to remove from 'prompt 1'
-    with open("systemprompt.md", 'r') as f: game_info = f.read()
-    data['prompt 1'] = data['prompt 1'].str.removeprefix(game_info)
-
-    # Convert response 2 to a dict from a string
-    # data['response 2'] = data['response 2'].apply(convert_to_dict)
-
-    dataset = Dataset.from_pandas(data)
-    return dataset
-
-raw_datasets = preprocess_data("finetune.csv")
-
-def tokenize_function(examples):
-    return tokenizer(examples["text"], padding="max_length", truncation=True)
-
-def compute_metrics(eval_pred):
-    logits, labels = eval_pred
-    predictions = np.argmax(logits, axis=-1)
-    return metric.compute(predictions=predictions, references=labels)
-
-tokenized_datasets = raw_datasets.map(tokenize_function, batched=True)
-
-small_train_dataset = tokenized_datasets["train"].shuffle(seed=42).select(range(1000)) 
-small_eval_dataset = tokenized_datasets["test"].shuffle(seed=42).select(range(1000)) 
-full_train_dataset = tokenized_datasets["train"]
-full_eval_dataset = tokenized_datasets["test"]
-
-model = AutoModelForSequenceClassification.from_pretrained("bert-base-cased", num_labels=2)
-
-training_args = TrainingArguments(output_dir="test_trainer")
-
-trainer = Trainer(
-    model=model,
-    args=training_args,
-    train_dataset=small_train_dataset,
-    eval_dataset=small_eval_dataset,
-    compute_metrics=compute_metrics,
+model, tokenizer = FastLanguageModel.from_pretrained(
+    model_name = MODEL,
+    max_seq_length=2048,
+    dtype=None,
+    load_in_4bit=True,
+    full_finetuning=False
 )
 
-trainer.train()
+model = FastLanguageModel.get_peft_model(
+    model,
+    target_modules=["q_proj","k_proj","v_proj","o_proj"],
+    use_gradient_checkpointing="unsloth",
+    r=16,
+    lora_alpha=4,
+    lora_dropout=0,
+    bias="none"
+)
 
-trainer.evaluate()
+from datasets import load_dataset
 
-print(raw_datasets["train"]["text"])
-print(raw_datasets["train"]["label"])
+# name = "mlabonne/FineTome-100k"
+# non_reasoning_data = load_dataset(name,split="train")
+
+# print(non_reasoning_data[0])
+
+# print(type(non_reasoning_data))
+
+non_reasoning_data = load_dataset("json",data_files="test_ft.json",split="train")
+
+print(type(non_reasoning_data))
+
+from unsloth.chat_templates import standardize_sharegpt
+
+dataset = standardize_sharegpt(non_reasoning_data)
+
+#from ChatGPT. Full prompt can be found in gpt-prompt.txt
+def apply_template(row):
+    row["text"] = tokenizer.apply_chat_template(
+        row["conversations"],
+        tokenize = False
+    )
+    return row
+
+#non_reasoning_conv = tokenizer.apply_chat_template(dataset["conversations"])
+#similarly from ChatGPT, same prompt as before
+dataset = dataset.map(apply_template)
+
+from trl import SFTTrainer, SFTConfig
+
+trainer = SFTTrainer(model = model,
+                     tokenizer = tokenizer,
+                     train_dataset=dataset,
+                     args = SFTConfig(
+                         per_device_train_batch_size=2,
+                         gradient_accumulation_steps=4,
+                         max_steps=3,
+                         learning_rate=1e-4,
+                         optim="adamw_8bit",
+                         weight_decay=0.01,
+                     ))
+
+trainer_stats = trainer.train()
+print(trainer_stats)
