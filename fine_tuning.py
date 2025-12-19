@@ -37,61 +37,45 @@ def split_data(data, training_percentage, seed):
     return training, testing
 
 def format_messages(entry):
-    content = f"<think>\n{entry['reasoning']}\n</think>\n{entry['label']}"
-
     messages = [
         {'role': 'user', 'content': entry['prompt'],
-         'role': 'assistant', 'content': content}
+         'role': 'assistant', 'content': entry['reasoning']}
     ]
-    return {'messages': messages}
+    tokenizer = AutoTokenizer.from_pretrained(repo_id)
+    texts = [
+        tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=False)
+        for msg in messages
+    ]
+
+    return tokenizer(texts, truncation=True, padding='max_length')
 
 # Read in the fine tuning csv
 # ---------- PREPROCESSING ----------
 def preprocess_data(file_name):
 
-    column_names = ['prompt 1', 'reasoning', 'response 2', 'label']
+    column_names = ['prompt', 'reasoning', 'response 2', 'label']
     data = pd.read_csv(file_name, header=None, names=column_names, sep='\[\[::\]\]', engine='python', on_bad_lines='skip')
 
     # game_info is a prefix to remove from 'prompt 1'
     with open("systemprompt.md", 'r') as f: game_info = f.read()
-    data['prompt 1'] = data['prompt 1'].str.removeprefix(game_info)
+    data['prompt'] = data['prompt'].str.removeprefix(game_info)
 
     # Convert response 2 to a dict from a string
     # data['response 2'] = data['response 2'].apply(convert_to_dict)
 
     dataset = Dataset.from_pandas(data)
 
-    formatted_data = data.apply(format_messages)
+    formatted_data = dataset.map(format_messages)
 
-    
+    print(formatted_data)
 
-    # A step here to apply loss function to the data
-    # TODO
-
-    # Something here to make sure that the different outputs we get for our various LLM calls is properly set up for us to give for prediction
-    for response2 in data['response 2']:
-        if 'players' in response2:
-            # TODO - since we save every llm response, gotta process all types of response into something trainable or drop them.
-            pass
-            
-
-    # At this point:
-    # 
-
-
-    processed_data = split_data(data, 0.8, 11111)
-
-
-    # Turn data into tokens
-    # Do this last
-    tokenized_data = processed_data.map(tokenize_func, batched=True)
+    # tokenized_data = formatted_data.map(tokenize_func, batched=True)
 
     # Shuffle and split data into two sets
     # Do this last as well
-    train_dataset, eval_dataset = split_data(tokenized_data, 0.8, 11111)
-    return train_dataset, eval_dataset
+    return formatted_data, 0
 
-td, ed = preprocess_data('finetune.csv')
+td, ed = preprocess_data('finetune_Naci_2_games_200t_4.74_overnight.csv')
 print(td.head())
 
 def fine_tune():

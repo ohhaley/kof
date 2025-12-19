@@ -113,11 +113,16 @@ def preprocess_data(file_name):
 
     # Shuffle and split data into two sets
     # Do this last as well
-    return Dataset.from_pandas(dataset)
+    d_dataset = Dataset.from_pandas(dataset)
+    dataset_split = d_dataset.train_test_split(test_size=0.1)
+
+    train_dataset = dataset_split["train"]
+    eval_dataset = dataset_split["test"]
+    return train_dataset, eval_dataset
 
 def fine_tune():
 
-    td = preprocess_data('finetune_Naci_2_games_200t_4.74_overnight.csv')
+    td, ed = preprocess_data('finetune_Naci_2_games_200t_4.74_overnight.csv')
     validate_dataset(td, tokenizer)
 
     sft_config = SFTConfig(
@@ -130,6 +135,7 @@ def fine_tune():
         logging_steps=10,
         eval_strategy='epoch',
         eval_steps=50,
+        do_eval=True,
         assistant_only_loss=True,
         packing=False
     )
@@ -137,6 +143,7 @@ def fine_tune():
     trainer = SFTTrainer(
         model=repo_id,
         train_dataset=td,
+        eval_dataset=ed,
         args=sft_config,
         processing_class=tokenizer
     )
