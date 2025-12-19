@@ -16,7 +16,7 @@ from huggingface_hub import hf_hub_download
 
 def get_model(context_window = 4096):
     repo_id = "byteshape/Qwen3-4B-Instruct-2507-GGUF"
-    filename="Qwen3-4B-Instruct-2507-Q5_K_S-4.74bpw.gguf"
+    filename="Qwen3-4B-Instruct-2507-IQ2_S-2.34bpw.gguf"
     model_path = hf_hub_download(repo_id=repo_id, filename=filename)
     llm = Llama(
         model_path=model_path,
