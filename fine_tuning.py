@@ -87,3 +87,4 @@ def fine_tune():
 # how do we export the fine tuned model
 # make sure to get data in and randomize, split, etc.
 # what formats of data can we even accept?
+# HOW DO WE MAKE IT CLEAR THE LABEL IS WHAT WE WANT TO BE PREDICTED
