@@ -90,14 +90,12 @@ def build_suspicions(history: list[str], suspicions: PlayerList, model: Llama, p
         system_prompt = f"You are playing a social deduction game where your goal is to find evil players." \
                     f"You are player {player_info.name}, you are {player_info.alignment}, your role is the {player_info.role}." \
                     f"Given a list of information and a list that you previously made of how likely you thought each player is EVIL, list all players along with how likely they are to be EVIL and why." \
-                    f"There can only be one of each role." \
-                    f"You should think very hard about what people said to you privately and publicly in order to try to figure out who is GOOD or EVIL!"
+                    f"There can only be one of each role."
     else:
         system_prompt = f"You are playing a social deduction game where your goal is to pretend your role is a good character, eliminate good players and keep the demon alive." \
                     f"You are player {player_info.name}, you are {player_info.alignment}, your role is the {player_info.role}." \
                     f"Given a list of information and a list that you previously made of how likely you thought each player is EVIL, list all players along with how likely they are to be EVIL and why." \
-                    f"There can only be one of each role." \
-                    f"You should think very hard about what people said to you privately and publicly in order to try to figure out who is GOOD or EVIL!"
+                    f"There can only be one of each role."
                     
     suspicions_list = get_suspicion_list(suspicions)
 
@@ -210,15 +208,14 @@ def talk_publicly(history: list[str], suspicions: PlayerList, model: Llama, play
     if player_info.alignment == "GOOD":
         system_prompt = f"You are playing a social deduction game where your goal is to find evil players." \
                         f"You are player {player_info.name}, you are {player_info.alignment}, your role is the {player_info.role}." \
-                        f"Given all information currently available to you and a list of how likely you think each player is EVIL you have previously constructed, decide if you would like to say anything publicly to every other player in the game." \
-                        f"You are allowed to share information you learned privately or from your role. You might want to do this -- it could be very helpful in order to figure out who the evil players are."
+                        f"Given all information currently available to you and a list of how likely you think each player is EVIL you have previously constructed, decide if you would like to say anything publicly to every other player in the game."
     else:
         system_prompt = f"You are playing a social deduction game where your goal is to pretend to be a good character, eliminate good players, and keep the demon alive." \
                         f"You are player {player_info.name}, you are {player_info.alignment}, your role is the {player_info.role}." \
                         f"Given all information currently available to you and a list of how likely you think each player is EVIL you have previously constructed, decide if you would like to say anything publicly."
     
     first_prompt = f"Analyze the following information and existing chances you think that each player is EVIL and decide if you want to say anything publicly, you may not say anything: \nInformation\n{hist}\nChances you think each player is EVIL: \n{suspicions_list}."
-    second_prompt = f"From your reasoning, give a message to say publicly or return nothing. Everything you say in this message will be broadcasted publicly."
+    second_prompt = f"From your reasoning, give a message to say publicly or return nothing."
     response, response2 = use_llm(system_prompt, first_prompt, second_prompt, player_info, model)
     return response2["choices"][0]["message"]["content"]
 
