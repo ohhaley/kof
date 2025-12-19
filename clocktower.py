@@ -5,7 +5,7 @@ import math
 # To enable LLM functionality in this file: uncomment the next two lines, as well as the last line of code in this program.
 # You ALSO have to comment out all of the code that isn't in a class/function in Player_v2.
 # If you don't do that, Python will run that code and give an error.
-from Player_v3 import build_suspicions, PlayerInfo, get_model, PlayerList, choose_players, nominate_player, vote_player, request_information, talk_publicly
+from Player_v3 import build_suspicions, PlayerInfo, get_model, PlayerList, choose_players, nominate_player, vote_player, request_information, talk_publicly, claim_slayer
 from Player_v3 import build_suspicions, PlayerInfo, get_model, PlayerList, choose_players, nominate_player, vote_player, request_information, answer_question, Question, QuestionData
 from Player_v3 import Player as NewPlayer
 
@@ -246,6 +246,33 @@ class Player:
             #no vote
             self.tell("I did not vote")
             return False
+        
+
+    def slayer_claim(self, g):
+        players = g.getplayers()
+        pi = PlayerInfo(self.name, self.alignment.name, self.role.name)
+        player_to_slay_json = claim_slayer(self.hsitory, self.suspicions, model, pi)
+        player_to_slay = json.loads(player_to_slay_json)
+        slain_name = player_to_slay["name"]
+        with open("finetune.csv","a") as f:
+            f.write("[[::]]")
+            euclidean_dist = self.find_sus_err(g)
+            f.write(f"{euclidean_dist}\n")
+        slain_player = None
+        for p in players:
+            if p.name == slain_name:
+                slain_player = p
+        if not slain_player == None:
+            for p in players:
+                p.tell(f"{self.name} has claimed to be the slayer and chooses {slain_player.name} as their target.")
+            
+            slayer(g, self, slain_player)
+    
+
+
+        
+            
+
         
     def startsuspicions(self, g):
         all_players = [] 
@@ -515,8 +542,9 @@ for p in g.getplayers():
     p.startsuspicions(g)
     if p.role == Role.VIRGIN:
         p.tokens.append(ReminderToken.VIRGIN_HAS_ABILITY)
-    if p.role == Role.SLAYER:
-        p.tokens.append(ReminderToken.SLAYER_HAS_ABILITY)
+    # if p.role == Role.SLAYER:
+    #     p.tokens.append(ReminderToken.SLAYER_HAS_ABILITY)
+    p.tokens.append(ReminderToken.SLAYER_HAS_ABILITY)
 
 def do_day(g, num_conversations):
     players = g.getplayers()
@@ -558,6 +586,9 @@ def do_evening(g):
             msg = p.say_publicly(g)
             if msg!="":
                 for q in players: q.tell(f"{p.name} says publicly: {msg}")    
+    for p in players:
+        if p.alive and ReminderToken.SLAYER_HAS_ABILITY in p.tokens:
+            p.slayer_claim(g)
 
     #noms
     can_nominate = g.getplayers()
@@ -1246,8 +1277,8 @@ def undertaker(g):
 
 
 def slayer(g, slayer, slayed):
+    slayer.tokens.remove(ReminderToken.SLAYER_HAS_ABILITY)
     if slayer.role == Role.SLAYER and slayer.alive and ReminderToken.SLAYER_HAS_ABILITY in slayer.tokens:
-        slayer.tokens.remove(ReminderToken.SLAYER_HAS_ABILITY)
         if ReminderToken.POISONER_IS_POISONED not in slayer.tokens and ReminderToken.DRUNK_IS_THE_DRUNK not in slayer.tokens:
             if slayed.role == Role.IMP:
                 slayed.alive = False
