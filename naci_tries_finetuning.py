@@ -59,7 +59,7 @@ trainer = SFTTrainer(model = model,
                      args = SFTConfig(
                          per_device_train_batch_size=2,
                          gradient_accumulation_steps=4,
-                         max_steps=3,
+                         max_steps=12,
                          learning_rate=1e-4,
                          optim="adamw_8bit",
                          weight_decay=0.01,
@@ -67,3 +67,6 @@ trainer = SFTTrainer(model = model,
 
 trainer_stats = trainer.train()
 print(trainer_stats)
+
+trainer.save_model("./naci_finetuned/fine_tuned_model")
+model.save_pretrained_gguf("naci_finetuned_gguf", tokenizer=tokenizer, quantization_method="q4_k_m")

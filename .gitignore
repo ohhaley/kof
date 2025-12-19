@@ -6,3 +6,5 @@ cuda-ubuntu2404.pin
 *.gguf
 test_trainer
 unsloth_compiled_cache/*
+naci_finetuned/*
+naci_finetuned_gguf/*
