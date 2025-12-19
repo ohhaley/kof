@@ -16,7 +16,8 @@ from huggingface_hub import hf_hub_download
 
 def get_model(context_window = 4096):
     repo_id = "byteshape/Qwen3-4B-Instruct-2507-GGUF"
-    filename="Qwen3-4B-Instruct-2507-IQ2_S-2.34bpw.gguf"
+    filename = "Qwen3-4B-Instruct-2507-Q5_K_S-4.74bpw.gguf"
+    #filename="Qwen3-4B-Instruct-2507-IQ2_S-2.34bpw.gguf"
     model_path = hf_hub_download(repo_id=repo_id, filename=filename)
     llm = Llama(
         model_path=model_path,
@@ -239,7 +240,7 @@ def claim_slayer(history: list[str], suspicions: PlayerList, model: Llama, playe
 
 # All LLM calls go through here.
 # The LLM will think using the initial message_template before being called again with their reasoning and the second prompt to give a structured format if asked for. Leave blank if no special output format is needed.
-def use_llm(system_prompt: str, first_prompt: str, second_prompt: str, player_info: PlayerInfo, model: Llama, output_format=None, max_tokens = 75):
+def use_llm(system_prompt: str, first_prompt: str, second_prompt: str, player_info: PlayerInfo, model: Llama, output_format=None, max_tokens = 200):
     identify_q, identify_a = identify_self(player_info)
     with open("systemprompt.md", 'r') as f: game_info = f.read()
     system_prompt = game_info+"\n"+system_prompt
