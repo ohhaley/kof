@@ -306,7 +306,17 @@ class Player:
                 if player.name not in names_in_suspicions:
                     new_suspicions.append(player)
 
-        
+        elif len(new_suspicions) > len(g.getplayers()):
+            seen_names = set()
+            unique_suspicions = []
+            for player in new_suspicions:
+                if player.name not in seen_names:
+                    unique_suspicions.append(player)
+                    seen_names.add(player.name)
+            new_suspicions = unique_suspicions  
+            
+
+
         sorted_suspicions = sorted(new_suspicions, key=lambda player: player.name)
         print(f'NUMBER OF PLAYERS IN SUSPIONS: {len(sorted_suspicions)}')
         
