@@ -69,4 +69,4 @@ trainer_stats = trainer.train()
 print(trainer_stats)
 
 trainer.save_model("./naci_finetuned/fine_tuned_model")
-model.save_pretrained_gguf("naci_finetuned_gguf", tokenizer=tokenizer, quantization_method="q4_k_m")
+#model.save_pretrained_gguf("naci_finetuned_gguf", tokenizer=tokenizer, quantization_method="q4_k_m")

@@ -122,7 +122,7 @@ def preprocess_data(file_name):
 
 def fine_tune():
 
-    td, ed = preprocess_data('finetune_Naci_2_games_200t_4.74_overnight.csv')
+    td, ed = preprocess_data('game1.csv')
     validate_dataset(td, tokenizer)
 
     sft_config = SFTConfig(
